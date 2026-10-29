@@ -1,0 +1,26 @@
+# Ambiente e arquivos gerados
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.partial
+*.log
+.coverage
+htmlcov/
+frontend/node_modules/
+frontend/dist/
+
+# Dados e backups locais
+/data/
+/backups/
+/backup*.zip
+/work/
+/outputs/
+
+# Configurações privadas
+.env
+.env.*
+!.env.example
+.ssh/
+*.pem
+*.key

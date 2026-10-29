@@ -1,0 +1,35 @@
+name: pagels-certificados
+
+services:
+  certificados:
+    image: pagels-certificados:${PAGELS_IMAGE_TAG:-1.1.0}
+    build:
+      context: .
+    restart: unless-stopped
+    init: true
+    user: "${PAGELS_UID:-10001}:${PAGELS_GID:-10001}"
+    environment:
+      PAGELS_DATA_DIR: /data
+    ports:
+      - "${PAGELS_BIND_IP:-192.168.15.9}:${PAGELS_PORT:-8090}:8090"
+    volumes:
+      - ./data:/data
+    read_only: true
+    tmpfs:
+      - /tmp:rw,nosuid,noexec,size=128m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/api/health', timeout=3).read()"]
+      interval: 15s
+      timeout: 5s
+      start_period: 20s
+      retries: 4
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

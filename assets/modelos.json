@@ -1,0 +1,225 @@
+{
+  "schema": "pagels.shared-pdf-templates/1.0",
+  "base_pdf": "modelos.pdf",
+  "page_numbering": "1-based",
+  "page": {
+    "width_mm": 297.0399999999999,
+    "height_mm": 210.07999999999984,
+    "width_pt": 842.003149606299,
+    "height_pt": 595.502362204724,
+    "orientation": "landscape",
+    "box_coordinate_origin": "top-left",
+    "baseline_coordinate_origin": "bottom-left"
+  },
+  "font_files": {
+    "LiberationSans-Bold": "LiberationSans-Bold.ttf"
+  },
+  "inputs": {
+    "nome_aluno": {
+      "required": true,
+      "type": "string"
+    },
+    "cidade": {
+      "required": true,
+      "type": "string"
+    },
+    "uf": {
+      "required": true,
+      "type": "string",
+      "length": 2
+    },
+    "data": {
+      "required": true,
+      "type": "date",
+      "storage_format": "YYYY-MM-DD",
+      "locale": "pt-BR"
+    }
+  },
+  "fields": [
+    {
+      "name": "nome_aluno",
+      "input_keys": [
+        "nome_aluno"
+      ],
+      "placeholder": "NOME DO ALUNO",
+      "box_mm": {
+        "x": 13,
+        "y": 82.5,
+        "width": 271,
+        "height": 12.5
+      },
+      "font": "LiberationSans-Bold",
+      "font_size_pt": 32,
+      "min_font_size_pt": 24,
+      "alignment": "center",
+      "vertical_alignment": "middle",
+      "wrap": false,
+      "overflow": "review_required",
+      "reference_baseline_pdf_pt": 331.143
+    },
+    {
+      "name": "local_data",
+      "input_keys": [
+        "cidade",
+        "uf",
+        "data"
+      ],
+      "placeholder": "Brasil – CIDADE/UF, DATA.",
+      "format": "Brasil – {cidade}/{uf}, {data_por_extenso}.",
+      "box_mm": {
+        "x": 13,
+        "y": 125.5,
+        "width": 271,
+        "height": 10
+      },
+      "font": "LiberationSans-Bold",
+      "font_size_pt": 19,
+      "min_font_size_pt": 16,
+      "alignment": "center",
+      "vertical_alignment": "middle",
+      "wrap": false,
+      "overflow": "review_required",
+      "reference_baseline_pdf_pt": 218.012
+    }
+  ],
+  "models": [
+    {
+      "id": "cinza_e_branca",
+      "label": "Faixa Cinza e Branca",
+      "page": 1,
+      "degree": null
+    },
+    {
+      "id": "cinza",
+      "label": "Faixa Cinza",
+      "page": 2,
+      "degree": null
+    },
+    {
+      "id": "cinza_e_preta",
+      "label": "Faixa Cinza e Preta",
+      "page": 3,
+      "degree": null
+    },
+    {
+      "id": "amarela_e_branca",
+      "label": "Faixa Amarela e Branca",
+      "page": 4,
+      "degree": null
+    },
+    {
+      "id": "amarela",
+      "label": "Faixa Amarela",
+      "page": 5,
+      "degree": null
+    },
+    {
+      "id": "amarela_e_preta",
+      "label": "Faixa Amarela e Preta",
+      "page": 6,
+      "degree": null
+    },
+    {
+      "id": "laranja_e_branca",
+      "label": "Faixa Laranja e Branca",
+      "page": 18,
+      "degree": null
+    },
+    {
+      "id": "laranja",
+      "label": "Faixa Laranja",
+      "page": 19,
+      "degree": null
+    },
+    {
+      "id": "laranja_e_preta",
+      "label": "Faixa Laranja e Preta",
+      "page": 20,
+      "degree": null
+    },
+    {
+      "id": "verde_e_branca",
+      "label": "Faixa Verde e Branca",
+      "page": 21,
+      "degree": null
+    },
+    {
+      "id": "verde",
+      "label": "Faixa Verde",
+      "page": 22,
+      "degree": null
+    },
+    {
+      "id": "verde_e_preta",
+      "label": "Faixa Verde e Preta",
+      "page": 23,
+      "degree": null
+    },
+    {
+      "id": "azul",
+      "label": "Faixa Azul",
+      "page": 7,
+      "degree": null
+    },
+    {
+      "id": "roxa",
+      "label": "Faixa Roxa",
+      "page": 8,
+      "degree": null
+    },
+    {
+      "id": "marrom",
+      "label": "Faixa Marrom",
+      "page": 9,
+      "degree": null
+    },
+    {
+      "id": "preta",
+      "label": "Faixa Preta",
+      "page": 10,
+      "degree": 0
+    },
+    {
+      "id": "preta_1_grau",
+      "label": "Faixa Preta 1º Grau",
+      "page": 11,
+      "degree": 1
+    },
+    {
+      "id": "preta_2_grau",
+      "label": "Faixa Preta 2º Grau",
+      "page": 12,
+      "degree": 2
+    },
+    {
+      "id": "preta_3_grau",
+      "label": "Faixa Preta 3º Grau",
+      "page": 13,
+      "degree": 3
+    },
+    {
+      "id": "preta_4_grau",
+      "label": "Faixa Preta 4º Grau",
+      "page": 14,
+      "degree": 4
+    },
+    {
+      "id": "preta_5_grau",
+      "label": "Faixa Preta 5º Grau",
+      "page": 15,
+      "degree": 5
+    },
+    {
+      "id": "preta_6_grau",
+      "label": "Faixa Preta 6º Grau",
+      "page": 16,
+      "degree": 6
+    },
+    {
+      "id": "preta_7_grau",
+      "label": "Faixa Preta 7º Grau",
+      "page": 17,
+      "degree": 7
+    }
+  ]
+}
