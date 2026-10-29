@@ -2,7 +2,7 @@ name: pagels-certificados
 
 services:
   certificados:
-    image: pagels-certificados:${PAGELS_IMAGE_TAG:-1.1.0}
+    image: pagels-certificados:${PAGELS_IMAGE_TAG:-1.1.1}
     build:
       context: .
     restart: unless-stopped

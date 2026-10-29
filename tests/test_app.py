@@ -48,6 +48,38 @@ def test_all_models_and_diacritics():
     assert "João Antônio" not in other.pages[0].extract_text()
 
 
+def test_date_format_in_preview_and_batch_exports(client):
+    cases = [
+        ("2026-12-01", "01 de dezembro de 2026"),
+        ("2026-03-09", "09 de março de 2026"),
+        ("2026-12-10", "10 de dezembro de 2026"),
+    ]
+    rows = [row(data=value) for value, _ in cases]
+    for item, (_, expected) in zip(rows, cases):
+        response = client.post("/api/preview", json=item)
+        assert response.status_code == 200
+        text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
+        assert f"Brasil – São José/SC, {expected}." in text
+    assert client.get("/api/emissoes").json()["total"] == 0
+
+    response = emit(client, rows)
+    assert response.status_code == 200, response.text
+    issued = response.json()
+    pdf = PdfReader(io.BytesIO(client.get(issued["pdf_url"]).content))
+    archive = ZipFile(io.BytesIO(client.get(issued["zip_url"]).content))
+    for index, (_, expected) in enumerate(cases):
+        assert expected in pdf.pages[index].extract_text()
+        individual = client.get(f'/api/emissoes/{issued["id"]}/certificados/{index}/pdf')
+        assert individual.status_code == 200
+        assert expected in PdfReader(io.BytesIO(individual.content)).pages[0].extract_text()
+        zipped = archive.read(archive.namelist()[index])
+        assert expected in PdfReader(io.BytesIO(zipped)).pages[0].extract_text()
+    # The display format must not change stored dates or date-based searches.
+    history = client.get("/api/emissoes?data_inicio=2026-12-01&data_fim=2026-12-01").json()
+    assert history["total"] == 1
+    assert history["items"][0]["data"] == "2026-12-01"
+
+
 def test_fitting_and_rejecting_overflow(client):
     field = META["fields"][0]
     long_name = "Maria Aparecida de Albuquerque e Vasconcelos da Silva"

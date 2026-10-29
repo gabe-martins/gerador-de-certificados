@@ -47,7 +47,7 @@ def fit(text, field):
 
 def local_text(row):
     d = date.fromisoformat(row["data"])
-    return f'Brasil – {row["cidade"]}/{row["uf"]}, {d.day} de {MONTHS[d.month-1]} de {d.year}.'
+    return f'Brasil – {row["cidade"]}/{row["uf"]}, {d.day:02d} de {MONTHS[d.month-1]} de {d.year}.'
 
 
 def validate(row):
@@ -108,7 +108,7 @@ def generate(rows, preview=False):
     for i, row in enumerate(rows):
         page = writer.add_page(base.pages[MODELS[row.get("modelo_id") or "azul"]["page"] - 1])
         page.merge_page(layers.pages[i])
-    writer.add_metadata({"/Title": "Prévia Pagels" if preview else "Certificados Pagels", "/Producer": "Pagels Certificados 1.1.0"})
+    writer.add_metadata({"/Title": "Prévia Pagels" if preview else "Certificados Pagels", "/Producer": "Pagels Certificados 1.1.1"})
     result = io.BytesIO()
     writer.write(result)
     return result.getvalue()

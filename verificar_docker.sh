@@ -23,7 +23,7 @@ assert health['status'] == 'ok' and health['models'] == 23
 assert b'root' in get('/')
 models = json.loads(get('/api/modelos'))['models']
 assert len(models) == 23
-payload = json.dumps({'nome_aluno':'Verificação João da Conceição','cidade':'São José','uf':'SC','data':health['today'],'modelo_id':'preta_7_grau'}).encode()
+payload = json.dumps({'nome_aluno':'Verificação João da Conceição','cidade':'São José','uf':'SC','data':'2026-12-01','modelo_id':'preta_7_grau'}).encode()
 req = urllib.request.Request(base+'/api/preview', data=payload, headers={'Content-Type':'application/json'})
 before = json.loads(get('/api/emissoes'))['total']
 with urllib.request.urlopen(req, timeout=15) as response:
@@ -31,6 +31,7 @@ with urllib.request.urlopen(req, timeout=15) as response:
     preview = PdfReader(io.BytesIO(response.read()))
     assert len(preview.pages) == 1
     assert 'João da Conceição' in preview.pages[0].extract_text()
+    assert '01 de dezembro de 2026' in preview.pages[0].extract_text()
 assert json.loads(get('/api/emissoes'))['total'] == before
 data = Path(os.environ['PAGELS_DATA_DIR'])
 with sqlite3.connect(data/'pagels.sqlite3') as conn:

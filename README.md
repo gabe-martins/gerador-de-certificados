@@ -41,7 +41,7 @@ O padrão `0.0.0.0` aceita conexões das interfaces do computador. Para acesso s
 
 ## Uso
 
-- **Emitir:** nome completo, cidade, UF, data da graduação e faixa. Para preta, selecione de zero a sete graus. A prévia mostra o próprio PDF; emitir salva o documento e libera o download.
+- **Emitir:** nome completo, cidade, UF, data da graduação e faixa. A data aparece no certificado por extenso, com dia de dois dígitos: **01 de dezembro de 2026**. Para preta, selecione de zero a sete graus. A prévia mostra o próprio PDF; emitir salva o documento e libera o download.
 - **Lote:** configure os dados comuns e importe CSV/XLSX ou cole nomes, um por linha. Campos vazios herdam os dados comuns. Edite os registros, remova linhas, valide e emita. Baixe o PDF completo ou um ZIP com PDFs individuais. Limites: 500 alunos e arquivo de 5 MB. Importar uma nova planilha substitui a lista em edição; colar nomes adiciona à lista.
 - **Histórico:** busca por nome, faixa e período da graduação. Baixe o PDF já emitido ou copie os dados para uma nova emissão. O original emitido fica preservado mesmo que os modelos mudem depois. O botão Imprimir abre o PDF no navegador; use papel A4 paisagem e escala 100% (tamanho real), conferindo as margens da impressora.
 - **Modelos:** galeria dos 23 certificados originais, com visualização ampliada e atalho para emitir.
