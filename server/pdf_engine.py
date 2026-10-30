@@ -105,10 +105,14 @@ def generate(rows, preview=False):
     overlay.seek(0)
     layers = PdfReader(overlay)
     writer = PdfWriter()
+    writer.pdf_header = base.pdf_header
     for i, row in enumerate(rows):
-        page = writer.add_page(base.pages[MODELS[row.get("modelo_id") or "azul"]["page"] - 1])
+        # Repeated add_page(template) calls can share mutable content objects.
+        # Start each certificate on an independent page, then merge its design.
+        page = writer.add_blank_page(width=META["page"]["width_pt"], height=META["page"]["height_pt"])
+        page.merge_page(base.pages[MODELS[row.get("modelo_id") or "azul"]["page"] - 1])
         page.merge_page(layers.pages[i])
-    writer.add_metadata({"/Title": "Prévia Pagels" if preview else "Certificados Pagels", "/Producer": "Pagels Certificados 1.1.1"})
+    writer.add_metadata({"/Title": "Prévia Pagels" if preview else "Certificados Pagels", "/Producer": "Pagels Certificados 1.1.2"})
     result = io.BytesIO()
     writer.write(result)
     return result.getvalue()

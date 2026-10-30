@@ -13,7 +13,7 @@ from openpyxl import Workbook
 from pypdf import PdfReader
 
 from server.main import create_app
-from server.pdf_engine import MODELS, META, fit, generate, validate
+from server.pdf_engine import MODELS, META, fit, generate, validate, local_text
 from server.imports import model_id
 
 
@@ -80,6 +80,38 @@ def test_date_format_in_preview_and_batch_exports(client):
     assert history["items"][0]["data"] == "2026-12-01"
 
 
+def test_repeated_belt_models_keep_each_students_fields_separate(client):
+    cases = [
+        ("Ana Paula Lima", "São José", "SC", "cinza_e_branca"),
+        ("Bruno Henrique Costa", "Curitiba", "PR", "cinza_e_branca"),
+        ("Carla Araújo Martins", "Niterói", "RJ", "cinza_e_branca"),
+        ("Diego Rafael Alves", "Recife", "PE", "amarela"),
+        ("Elisa Nogueira Souza", "Salvador", "BA", "amarela"),
+        ("Felipe Augusto Silva", "São Paulo", "SP", "laranja"),
+    ]
+    rows = [row(nome_aluno=name, cidade=city, uf=state, modelo_id=model,
+                data=f"2026-12-{index+1:02d}")
+            for index, (name, city, state, model) in enumerate(cases)]
+    response = emit(client, rows)
+    assert response.status_code == 200, response.text
+    issued = response.json()
+    combined = PdfReader(io.BytesIO(client.get(issued["pdf_url"]).content))
+    archive = ZipFile(io.BytesIO(client.get(issued["zip_url"]).content))
+    assert len(combined.pages) == len(archive.namelist()) == len(rows)
+    for index, expected in enumerate(rows):
+        individual = client.get(f'/api/emissoes/{issued["id"]}/certificados/{index}/pdf')
+        assert individual.status_code == 200
+        texts = [
+            combined.pages[index].extract_text(),
+            PdfReader(io.BytesIO(individual.content)).pages[0].extract_text(),
+            PdfReader(io.BytesIO(archive.read(archive.namelist()[index]))).pages[0].extract_text(),
+        ]
+        for text in texts:
+            assert [r["nome_aluno"] for r in rows if r["nome_aluno"] in text] == [expected["nome_aluno"]]
+            assert [local_text(r) for r in rows if local_text(r) in text] == [local_text(expected)]
+            assert text.count("Brasil –") == 1
+
+
 def test_fitting_and_rejecting_overflow(client):
     field = META["fields"][0]
     long_name = "Maria Aparecida de Albuquerque e Vasconcelos da Silva"
@@ -136,7 +168,8 @@ def test_batch_100_and_zip(client):
     pdf = PdfReader(io.BytesIO(client.get(value["pdf_url"]).content))
     assert len(pdf.pages) == 100
     for i, page in enumerate(pdf.pages):
-        assert rows[i]["nome_aluno"] in page.extract_text()
+        text = page.extract_text()
+        assert [r["nome_aluno"] for r in rows if r["nome_aluno"] in text] == [rows[i]["nome_aluno"]]
     archive = ZipFile(io.BytesIO(client.get(value["zip_url"]).content))
     assert len(archive.namelist()) == len(set(archive.namelist())) == 100
     assert "Aluno de Teste 100" in PdfReader(io.BytesIO(archive.read(archive.namelist()[-1]))).pages[0].extract_text()

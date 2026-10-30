@@ -66,7 +66,7 @@ def create_app(data_dir=None):
           CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), cidade TEXT NOT NULL, uf TEXT NOT NULL);
           INSERT OR IGNORE INTO settings VALUES(1, '', '');
         """)
-    app = FastAPI(title="Pagels Certificados", version="1.1.1", docs_url=None, redoc_url=None)
+    app = FastAPI(title="Pagels Certificados", version="1.1.2", docs_url=None, redoc_url=None)
     app.state.data_dir = data
 
     @app.middleware("http")
@@ -108,7 +108,7 @@ def create_app(data_dir=None):
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "1.1.1", "models": len(MODELS), "today": datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat()}
+        return {"status": "ok", "version": "1.1.2", "models": len(MODELS), "today": datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat()}
 
     @app.get("/api/modelos")
     def models():

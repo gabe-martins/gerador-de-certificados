@@ -83,4 +83,4 @@ npm run build
 
 Para compilar a interface, use Node 20.19+ ou 22.12+. `requirements.lock` fixa o ambiente Python validado; `frontend/package-lock.json` fixa o frontend. Após recompilar, reinicie o servidor e recarregue o navegador. Em desenvolvimento, `npm run dev` usa Vite na porta 5173 com proxy de `/api` para 8090; a distribuição final usa apenas a porta 8090.
 
-Os testes automatizados verificam os 23 modelos, acentos, ajuste de nomes, rejeição de transbordamento, lotes de 100 páginas e ZIP, imports, duplicados, reenvio concorrente, persistência e integridade do backup. A validação responsiva no navegador não substitui o teste de Wi-Fi e impressão com os dispositivos físicos da academia.
+Os testes automatizados verificam os 23 modelos, acentos, ajuste de nomes, rejeição de transbordamento, lotes de 100 páginas e ZIP, isolamento dos dados de alunos que usam a mesma faixa, imports, duplicados, reenvio concorrente, persistência e integridade do backup. A validação responsiva no navegador não substitui o teste de Wi-Fi e impressão com os dispositivos físicos da academia.

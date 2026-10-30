@@ -39,7 +39,7 @@ Os dados ficam no diretório `data/` do servidor, montado em `/data`. Recriar o 
 
 Antes da migração final, pare a instância antiga para impedir novas emissões durante a cópia. Faça um snapshot consistente do SQLite e copie todos os PDFs. Mantenha uma cópia de segurança antes de restaurar qualquer conteúdo no servidor. Só libere o novo endereço após comparar a quantidade de emissões, os hashes dos PDFs e as configurações.
 
-Uma checagem de prévia não cria emissão no histórico. `verificar_docker.sh` valida o PDF com acentos, os 23 modelos, a integridade do banco e a presença dos arquivos já emitidos. O deploy também deve ser conferido pelo endereço LAN e pelo navegador.
+Uma checagem de prévia não cria emissão no histórico. `verificar_docker.sh` valida o PDF com acentos, os 23 modelos, a integridade do banco e a presença dos arquivos já emitidos. Também gera um lote com faixas repetidas em memória para conferir que cada página contém apenas os dados do respectivo aluno, sem criar registros no histórico. O deploy também deve ser conferido pelo endereço LAN e pelo navegador.
 
 O backup original `backup_certificados_pagels_2026-10-29.zip` permanece no projeto local. O botão de backup operacional da aplicação continua disponível e inclui histórico, configurações, PDFs e modelos.
 

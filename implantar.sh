@@ -7,7 +7,7 @@ docker compose version >/dev/null
 docker info >/dev/null
 if [[ ! -f .env ]]; then
   umask 077
-  printf 'PAGELS_BIND_IP=192.168.15.9\nPAGELS_PORT=8090\nPAGELS_UID=%s\nPAGELS_GID=%s\nPAGELS_IMAGE_TAG=1.1.1\n' "$(id -u)" "$(id -g)" > .env
+  printf 'PAGELS_BIND_IP=192.168.15.9\nPAGELS_PORT=8090\nPAGELS_UID=%s\nPAGELS_GID=%s\nPAGELS_IMAGE_TAG=1.1.2\n' "$(id -u)" "$(id -g)" > .env
 fi
 mkdir -p data
 docker compose config --quiet

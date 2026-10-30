@@ -32,6 +32,20 @@ with urllib.request.urlopen(req, timeout=15) as response:
     assert len(preview.pages) == 1
     assert 'João da Conceição' in preview.pages[0].extract_text()
     assert '01 de dezembro de 2026' in preview.pages[0].extract_text()
+# Exercise repeated templates without saving verification students in the history.
+from server.pdf_engine import generate, local_text
+rows = [
+    {'nome_aluno':f'Verificação de Lote {i:03d}', 'cidade':'São José', 'uf':'SC',
+     'data':f'2026-12-{i:02d}', 'modelo_id':'cinza_e_branca'}
+    for i in range(1, 4)
+]
+batch = PdfReader(io.BytesIO(generate(rows)))
+assert len(batch.pages) == 3
+for row, page in zip(rows, batch.pages):
+    text = page.extract_text()
+    assert [r['nome_aluno'] for r in rows if r['nome_aluno'] in text] == [row['nome_aluno']]
+    assert [local_text(r) for r in rows if local_text(r) in text] == [local_text(row)]
+
 assert json.loads(get('/api/emissoes'))['total'] == before
 data = Path(os.environ['PAGELS_DATA_DIR'])
 with sqlite3.connect(data/'pagels.sqlite3') as conn:
@@ -39,5 +53,5 @@ with sqlite3.connect(data/'pagels.sqlite3') as conn:
     jobs = conn.execute('SELECT id FROM jobs').fetchall()
     for (job_id,) in jobs:
         assert (data/'pdfs'/f'{job_id}.pdf').is_file()
-print(json.dumps({'health':'ok','modelos':23,'preview_pdf':'ok','database':'ok','certificados':before,'persisted_pdfs':len(jobs),'uid':os.getuid()},ensure_ascii=False))
+print(json.dumps({'health':'ok','modelos':23,'preview_pdf':'ok','repeated_template_batch':'ok','database':'ok','certificados':before,'persisted_pdfs':len(jobs),'uid':os.getuid()},ensure_ascii=False))
 PY

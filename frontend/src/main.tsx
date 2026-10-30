@@ -1891,7 +1891,7 @@ function Preferences({
             Rede local · sem login
           </span>
           <span>Dados compartilhados no servidor</span>
-          <span>Versão 1.1.0</span>
+          <span>Versão 1.1.2</span>
         </div>
       </section>
     </div>
