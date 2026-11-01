@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from pypdf import PdfReader
 
 from server.main import create_app
-from server.profiles import DEFAULT_PROFILE, env, load_profile
+from server.profiles import DEFAULT_PROFILE, ROOT, env, load_profile
 from tools.create_profile import create_profile
 
 
@@ -146,3 +146,8 @@ def test_profile_scaffold_does_not_overwrite_existing_files(tmp_path, participat
     with pytest.raises(FileExistsError):
         create_profile("outro-evento", "Outro Evento", participation)
     assert (participation / "profile.json").read_bytes() == before
+
+
+def test_default_data_directories_are_configured_per_profile(participation):
+    assert load_profile().default_data_dir == ROOT / "data"
+    assert load_profile(participation).default_data_dir == ROOT / "data" / "curso-fotografia"

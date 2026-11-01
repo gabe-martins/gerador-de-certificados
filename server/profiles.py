@@ -57,7 +57,7 @@ class Profile:
 
     @property
     def default_data_dir(self):
-        return ROOT / "data" if self.id == DEFAULT_PROFILE else ROOT / "data" / self.id
+        return ROOT / "data" / self.config.get("data_subdirectory", self.id)
 
     def public(self):
         return {key: self.config[key] for key in
@@ -82,6 +82,9 @@ def load_profile(profile=None):
     for key in ("name", "short_name", "tagline", "default_model"):
         if not isinstance(config[key], str) or not config[key].strip():
             raise ValueError(f"Configuração de perfil inválida: {key}.")
+    data_subdirectory = config.get("data_subdirectory", config["id"])
+    if not isinstance(data_subdirectory, str) or (data_subdirectory and not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", data_subdirectory)):
+        raise ValueError("Subdiretório de dados inválido no perfil.")
     database_name = config.get("database_name", "certificates.sqlite3")
     if not re.fullmatch(r"[a-zA-Z0-9_-]+\.sqlite3", database_name):
         raise ValueError("Nome de banco inválido no perfil.")

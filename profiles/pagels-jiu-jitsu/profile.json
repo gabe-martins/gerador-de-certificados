@@ -31,5 +31,6 @@
       "amarelo": "amarela"
     }
   },
-  "database_name": "pagels.sqlite3"
+  "database_name": "pagels.sqlite3",
+  "data_subdirectory": ""
 }

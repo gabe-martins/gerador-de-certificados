@@ -9,7 +9,7 @@ O gerador mantém quatro responsabilidades separadas:
 
 Não há marca nem identificadores de faixa fixos no motor PDF ou na interface. Faixas e graus são descritos pelos modelos da Pagels; modelos sem esse metadado usam seleção simples e ícone genérico.
 
-O perfil padrão é selecionado por `profiles/default.json`. O campo opcional `legacy_env_prefix` nesse arquivo permite que uma aplicação especializada continue aceitando as variáveis de sua implantação antiga. O campo opcional `database_name` em `profile.json` preserva o nome do banco de uma instalação existente; o padrão é `certificates.sqlite3`.
+O perfil padrão é selecionado por `profiles/default.json`. O campo opcional `legacy_env_prefix` nesse arquivo permite que uma aplicação especializada continue aceitando as variáveis de sua implantação antiga. O campo opcional `database_name` em `profile.json` preserva o nome do banco de uma instalação existente; o padrão é `certificates.sqlite3`. O campo opcional `data_subdirectory` define o subdiretório em `data/`; o padrão é o identificador do perfil. Na Pagels, a string vazia preserva o caminho histórico `data/`.
 
 ## Criar um perfil
 
