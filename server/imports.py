@@ -1,6 +1,5 @@
 import csv
 import io
-import json
 import re
 from datetime import date, datetime
 from zipfile import ZipFile, BadZipFile
@@ -8,20 +7,35 @@ from xml.etree.ElementTree import ParseError
 
 from openpyxl import load_workbook, Workbook
 from openpyxl.utils.exceptions import InvalidFileException
-from .pdf_engine import normalized, clean, MODELS
+from .pdf_engine import normalized, clean
 
 MAX_ROWS = 500
 HEADERS = ["nome_aluno", "cidade", "uf", "data", "modelo_id"]
-ALIASES = {"nome": "nome_aluno", "aluno": "nome_aluno", "nome do aluno": "nome_aluno", "nome aluno": "nome_aluno", "faixa": "modelo_id", "modelo": "modelo_id", "estado": "uf", "graduacao": "modelo_id", "grau": "grau"}
+ALIASES = {"nome": "nome_aluno", "participante": "nome_aluno", "nome do participante": "nome_aluno", "modelo": "modelo_id", "estado": "uf"}
 
 
-def model_id(value, degree=None):
-    # Remove ordinal symbols before NFKD, which otherwise converts º into the letter o.
-    value = normalized(clean(value).replace("º", "").replace("°", "")).replace("faixa ", "").replace("amarelo", "amarela")
-    value = re.sub(r"[\s/-]+", "_", value)
-    if value == "preta" and degree not in (None, "", 0, "0"):
-        value = f"preta_{clean(degree).replace('º', '').replace('°', '')}_grau"
-    return value
+def model_key(value):
+    value = normalized(clean(value).replace("º", "").replace("°", ""))
+    return re.sub(r"[\s/-]+", "_", value)
+
+
+def model_id(value, profile, degree=None):
+    imports = profile.config.get("imports", {})
+    aliases = {model_key(k): v for k, v in imports.get("model_aliases", {}).items()}
+    for model in profile.models.values():
+        aliases[model_key(model["id"])] = model["id"]
+        aliases[model_key(model["label"])] = model["id"]
+        for prefix in imports.get("label_prefixes", []):
+            if model["label"].startswith(prefix):
+                aliases[model_key(model["label"][len(prefix):])] = model["id"]
+    result = aliases.get(model_key(value), clean(value))
+    selected = profile.models.get(result, {})
+    if selected.get("group") and degree not in (None, "", 0, "0"):
+        for model in profile.models.values():
+            if model.get("group") == selected["group"] and str(model.get("degree")) == clean(degree).replace("º", "").replace("°", ""):
+                return model["id"]
+        return "__invalid_degree__"
+    return result
 
 
 def import_date(value):
@@ -36,7 +50,8 @@ def import_date(value):
     return value
 
 
-def parse_import(content, name, defaults):
+def parse_import(content, name, defaults, profile):
+    aliases = ALIASES | profile.config.get("imports", {}).get("aliases", {})
     if name.lower().endswith(".xlsx"):
         try:
             with ZipFile(io.BytesIO(content)) as z:
@@ -51,7 +66,7 @@ def parse_import(content, name, defaults):
                     if not any(clean(c.value) for c in cells):
                         continue
                     if len(matrix) > MAX_ROWS:
-                        raise ValueError(f"Importe até {MAX_ROWS} alunos por lote.")
+                        raise ValueError(f"Importe até {MAX_ROWS} participantes por lote.")
                     if any(c.data_type == "f" for c in cells):
                         raise ValueError("A planilha contém fórmulas. Cole somente os valores antes de importar.")
                     matrix.append([c.value for c in cells[:30]])
@@ -77,37 +92,37 @@ def parse_import(content, name, defaults):
     headers = []
     for item in matrix[0]:
         key = normalized(clean(item)).replace("_", " ")
-        headers.append(ALIASES.get(key, key.replace(" ", "_")))
+        headers.append(aliases.get(key, key.replace(" ", "_")))
     if "nome_aluno" not in headers:
         raise ValueError("A primeira linha deve conter a coluna nome_aluno (ou nome). Baixe a planilha modelo.")
-    recognized = [h for h in headers if h in HEADERS or h == "grau"]
+    recognized = [h for h in headers if h in HEADERS or h == "degree"]
     if len(set(recognized)) != len(recognized):
         raise ValueError("Há colunas repetidas. Mantenha apenas uma coluna para cada campo.")
     if len(matrix) - 1 > MAX_ROWS:
-        raise ValueError(f"Importe até {MAX_ROWS} alunos por lote.")
+        raise ValueError(f"Importe até {MAX_ROWS} participantes por lote.")
     rows = []
     for values in matrix[1:]:
         row = dict(defaults)
-        imported = {k: v for k, v in zip(headers, values) if k in HEADERS + ["grau"] and clean(v)}
+        imported = {k: v for k, v in zip(headers, values) if k in HEADERS + ["degree"] and clean(v)}
         row.update(imported)
         row["data"] = import_date(row.get("data"))
-        row["modelo_id"] = model_id(row.get("modelo_id", ""), row.pop("grau", None))
+        row["modelo_id"] = model_id(row.get("modelo_id", ""), profile, row.pop("degree", None))
         rows.append({k: clean(row.get(k)) for k in HEADERS})
     return rows
 
 
-def template_xlsx():
+def template_xlsx(profile):
     wb = Workbook()
     ws = wb.active
-    ws.title = "Alunos"
+    ws.title = "Participantes"
     ws.append(HEADERS)
     for col in "ABCDE":
         ws.column_dimensions[col].width = 28 if col in "AB" else 20
     ws.freeze_panes = "A2"
     guide = wb.create_sheet("Instruções")
-    for text in ["Preencha a aba Alunos; uma linha por aluno.", "Campos vazios herdam os dados do evento na aplicação.", "Data: DD/MM/AAAA ou AAAA-MM-DD. Sem fórmulas.", "Na coluna modelo_id, use um dos identificadores abaixo:"]:
+    for text in ["Preencha a aba Participantes; uma linha por participante.", "Campos vazios herdam os dados do evento na aplicação.", "Data: DD/MM/AAAA ou AAAA-MM-DD. Sem fórmulas.", "Na coluna modelo_id, use um dos identificadores abaixo:"]:
         guide.append([text])
-    for model in MODELS.values():
+    for model in profile.models.values():
         guide.append([model["id"], model["label"]])
     guide.column_dimensions["A"].width = 80
     guide.column_dimensions["B"].width = 35

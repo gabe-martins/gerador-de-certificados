@@ -5,7 +5,6 @@ import os
 import sqlite3
 import tempfile
 import threading
-from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -18,10 +17,12 @@ from fastapi.responses import FileResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from pypdf import PdfReader
-from .pdf_engine import ASSETS, META, MODELS, VERSION, UFS, validate, generate, single_page, filename, duplicate_key, clean, normalized
+from .pdf_engine import CertificateEngine, UFS, single_page, filename, duplicate_key, clean, normalized
+from .profiles import ROOT, FONT_DIR, DEFAULT_SETTINGS, load_profile, env
 from .imports import parse_import, template_xlsx, MAX_ROWS
+from .storage import CertificateStore
 
-ROOT = Path(__file__).resolve().parents[1]
+APP_VERSION = "1.2.0"
 
 
 class Rows(BaseModel):
@@ -33,41 +34,20 @@ class Issue(Rows):
     allow_duplicates: bool = False
 
 
-def create_app(data_dir=None):
-    data = Path(data_dir or os.environ.get("PAGELS_DATA_DIR", ROOT / "data"))
-    data.mkdir(parents=True, exist_ok=True)
-    (data / "pdfs").mkdir(exist_ok=True)
+def create_app(data_dir=None, profile=None):
+    profile = load_profile(profile)
+    engine = CertificateEngine(profile)
+    ASSETS, MODELS, VERSION = profile.assets, engine.models, profile.version
+    validate, generate = engine.validate, engine.generate
+    data = Path(data_dir or env("DATA_DIR", profile.default_data_dir))
+    database_name = profile.database_name
+    store = CertificateStore(data, profile)
+    db = store.connect
     lock = threading.RLock()
-
-    @contextmanager
-    def db():
-        conn = sqlite3.connect(data / "pagels.sqlite3", timeout=30)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys=ON")
-        conn.create_function("normalize_name", 1, normalized, deterministic=True)
-        try:
-            with conn:
-                yield conn
-        finally:
-            conn.close()
-
-    with db() as conn:
-        conn.executescript("""
-          PRAGMA journal_mode=WAL;
-          CREATE TABLE IF NOT EXISTS jobs (
-            id TEXT PRIMARY KEY, request_id TEXT UNIQUE NOT NULL, payload_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL, template_version TEXT NOT NULL, count INTEGER NOT NULL);
-          CREATE TABLE IF NOT EXISTS certificates (
-            job_id TEXT NOT NULL REFERENCES jobs(id), position INTEGER NOT NULL,
-            nome_aluno TEXT NOT NULL, cidade TEXT NOT NULL, uf TEXT NOT NULL,
-            data TEXT NOT NULL, modelo_id TEXT NOT NULL, duplicate_key TEXT NOT NULL,
-            PRIMARY KEY(job_id, position));
-          CREATE INDEX IF NOT EXISTS cert_duplicate ON certificates(duplicate_key);
-          CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY CHECK(id=1), cidade TEXT NOT NULL, uf TEXT NOT NULL);
-          INSERT OR IGNORE INTO settings VALUES(1, '', '');
-        """)
-    app = FastAPI(title="Pagels Certificados", version="1.1.2", docs_url=None, redoc_url=None)
+    app = FastAPI(title=f"Gerador de Certificados · {profile.config['name']}", version=APP_VERSION, docs_url=None, redoc_url=None)
     app.state.data_dir = data
+    app.state.profile = profile
+    app.state.engine = engine
 
     @app.middleware("http")
     async def same_origin(request: Request, call_next):
@@ -90,9 +70,9 @@ def create_app(data_dir=None):
             if not errors:
                 key = duplicate_key(row)
                 if key in seen:
-                    warnings.append("Este aluno, faixa e data aparecem mais de uma vez neste lote.")
+                    warnings.append("Este nome, modelo e data aparecem mais de uma vez neste lote.")
                 if conn.execute("SELECT 1 FROM certificates WHERE duplicate_key=? LIMIT 1", (key,)).fetchone():
-                    warnings.append("Já existe uma emissão para este nome, faixa e data no histórico.")
+                    warnings.append("Já existe uma emissão para este nome, modelo e data no histórico.")
                 seen.add(key)
             results.append({"index": index, "row": row, "errors": errors, "warnings": warnings, "font_sizes": sizes})
         return {"items": results, "valid": sum(not i["errors"] for i in results), "total": len(results), "warnings": sum(bool(i["warnings"]) for i in results)}
@@ -108,7 +88,17 @@ def create_app(data_dir=None):
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "1.1.2", "models": len(MODELS), "today": datetime.now(ZoneInfo("America/Sao_Paulo")).date().isoformat()}
+        return {"status": "ok", "version": APP_VERSION, "profile": profile.id, "models": len(MODELS), "today": datetime.now(ZoneInfo(profile.config["timezone"])).date().isoformat()}
+
+    @app.get("/api/perfil")
+    def active_profile():
+        return profile.public()
+
+    @app.get("/api/perfil/logo")
+    def profile_logo():
+        if not profile.config.get("logo"):
+            raise HTTPException(404, "Este perfil não tem logotipo.")
+        return FileResponse(ASSETS / profile.config["logo"])
 
     @app.get("/api/modelos")
     def models():
@@ -122,7 +112,7 @@ def create_app(data_dir=None):
     def preview(raw: dict):
         # Blank fields are placeholders; supplied fields still receive final validation.
         row = {k: clean(raw.get(k)) for k in ("nome_aluno", "cidade", "uf", "data", "modelo_id")}
-        filled = row | {"nome_aluno": row["nome_aluno"] or "NOME DO ALUNO", "cidade": row["cidade"] or "CIDADE", "uf": row["uf"] or "SP", "data": row["data"] or "2026-01-01", "modelo_id": row["modelo_id"] or "azul"}
+        filled = row | {"nome_aluno": row["nome_aluno"] or next(f["placeholder"] for f in profile.meta["fields"] if "nome_aluno" in f["input_keys"]), "cidade": row["cidade"] or "CIDADE", "uf": row["uf"] or "SP", "data": row["data"] or "2026-01-01", "modelo_id": row["modelo_id"] or profile.config["default_model"]}
         checked, errors, _ = validate(filled)
         if errors:
             raise HTTPException(422, {"errors": errors})
@@ -144,9 +134,9 @@ def create_app(data_dir=None):
             default_values = json.loads(defaults)
             if not isinstance(default_values, dict):
                 raise ValueError("Dados do evento inválidos.")
-            rows = parse_import(content, file.filename or "", default_values)
+            rows = parse_import(content, file.filename or "", default_values, profile)
             if not rows:
-                raise ValueError("Inclua pelo menos um aluno na planilha.")
+                raise ValueError("Inclua pelo menos um participante na planilha.")
         except (ValueError, TypeError, UnicodeError) as exc:
             raise HTTPException(422, str(exc)) from exc
         with db() as conn:
@@ -154,11 +144,11 @@ def create_app(data_dir=None):
 
     @app.get("/api/lotes/modelo.xlsx")
     def xlsx():
-        return Response(template_xlsx(), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": 'attachment; filename="modelo_alunos_pagels.xlsx"'})
+        return Response(template_xlsx(profile), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": f'attachment; filename="modelo_{profile.id}.xlsx"'})
 
     @app.get("/api/lotes/modelo.csv")
     def csv():
-        return Response("\ufeffnome_aluno;cidade;uf;data;modelo_id\r\n".encode(), media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="modelo_alunos_pagels.csv"'})
+        return Response("\ufeffnome_aluno;cidade;uf;data;modelo_id\r\n".encode(), media_type="text/csv", headers={"Content-Disposition": f'attachment; filename="modelo_{profile.id}.csv"'})
 
     @app.post("/api/emissoes")
     def issue(body: Issue):
@@ -179,7 +169,7 @@ def create_app(data_dir=None):
                 raise HTTPException(409, {"code": "duplicates", "validation": validation})
             job_id = str(uuid4())
             job = {"id": job_id, "request_id": str(body.request_id), "payload_hash": payload_hash,
-                "created_at": datetime.now(ZoneInfo("America/Sao_Paulo")).isoformat(), "template_version": VERSION, "count": len(rows)}
+                "created_at": datetime.now(ZoneInfo(profile.config["timezone"])).isoformat(), "template_version": VERSION, "count": len(rows)}
             content = generate(rows)
             path = data / "pdfs" / f"{job_id}.pdf"
             partial = path.with_suffix(".partial")
@@ -221,7 +211,7 @@ def create_app(data_dir=None):
     def pdf(job_id: str, inline: bool = False):
         with db() as conn:
             job_or_404(job_id, conn)
-        return FileResponse(data / "pdfs" / f"{job_id}.pdf", media_type="application/pdf", filename=f"certificados_pagels_{job_id[:8]}.pdf", content_disposition_type="inline" if inline else "attachment")
+        return FileResponse(data / "pdfs" / f"{job_id}.pdf", media_type="application/pdf", filename=f"certificados_{profile.id}_{job_id[:8]}.pdf", content_disposition_type="inline" if inline else "attachment")
 
     @app.get("/api/emissoes/{job_id}/certificados/{position}/pdf")
     def individual_pdf(job_id: str, position: int, inline: bool = False):
@@ -244,7 +234,7 @@ def create_app(data_dir=None):
         with ZipFile(output, "w", ZIP_DEFLATED) as z:
             for i, row in enumerate(rows):
                 z.writestr(filename(dict(row), i), single_page(content, i))
-        return Response(output.getvalue(), media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="certificados_pagels.zip"'})
+        return Response(output.getvalue(), media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="certificados_{profile.id}.zip"'})
 
     @app.get("/api/configuracoes")
     def settings():
@@ -264,7 +254,7 @@ def create_app(data_dir=None):
     @app.get("/api/backup")
     def backup():
         with lock, tempfile.TemporaryDirectory() as temp:
-            snapshot = Path(temp) / "pagels.sqlite3"
+            snapshot = Path(temp) / database_name
             with db() as source, sqlite3.connect(snapshot) as target:
                 source.backup(target)
             with sqlite3.connect(snapshot) as conn:
@@ -272,28 +262,27 @@ def create_app(data_dir=None):
             output = io.BytesIO()
             manifest = {}
             with ZipFile(output, "w", ZIP_DEFLATED) as z:
-                files = [(snapshot, "data/pagels.sqlite3")] + [(data / "pdfs" / f"{i}.pdf", f"data/pdfs/{i}.pdf") for i in ids]
-                files += [(p, "assets/" + p.name) for p in ASSETS.iterdir() if p.is_file()]
+                files = [(snapshot, f"data/{database_name}")] + [(data / "pdfs" / f"{i}.pdf", f"data/pdfs/{i}.pdf") for i in ids]
+                files += [(p, f"profiles/{profile.id}/assets/" + p.name) for p in ASSETS.iterdir() if p.is_file()]
+                files += [(profile.directory / "profile.json", f"profiles/{profile.id}/profile.json")]
+                files += [(p, "assets/fonts/" + p.name) for p in FONT_DIR.iterdir() if p.is_file()]
                 for path, name in files:
                     content = path.read_bytes()
                     z.writestr(name, content)
                     manifest[name] = hashlib.sha256(content).hexdigest()
-                z.writestr("manifesto.json", json.dumps({"version": 1, "template_version": VERSION, "sha256": manifest}, indent=2))
-                z.writestr("RESTAURAR.txt", "Pare a aplicação. Guarde a pasta data atual. Extraia data/ e assets/ deste ZIP para a raiz da aplicação. Inicie novamente. O ZIP de originais permanece separado na raiz.\n")
-            return Response(output.getvalue(), media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="backup_pagels_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.zip"'})
+                defaults = DEFAULT_SETTINGS if DEFAULT_SETTINGS["profile"] == profile.id else {"profile": profile.id}
+                default_content = json.dumps(defaults, indent=2).encode()
+                z.writestr("profiles/default.json", default_content)
+                manifest["profiles/default.json"] = hashlib.sha256(default_content).hexdigest()
+                z.writestr("manifesto.json", json.dumps({"version": 2, "profile": profile.id, "database": database_name, "template_version": VERSION, "sha256": manifest}, indent=2))
+                z.writestr("RESTAURAR.txt", "Pare a aplicação. Guarde a pasta data atual. Restaure data/ no diretório de dados do perfil; restaure profiles/ e assets/ na raiz do projeto. Selecione o perfil indicado em manifesto.json antes de iniciar. Consulte docs/profiles.md.\n")
+            return Response(output.getvalue(), media_type="application/zip", headers={"Content-Disposition": f'attachment; filename="backup_{profile.id}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.zip"'})
 
     dist = ROOT / "frontend" / "dist"
     if dist.exists():
         app.mount("/assets", StaticFiles(directory=dist / "assets"), name="frontend-assets")
 
-        @app.get("/logo.jpg")
-        def logo():
-            return FileResponse(dist / "logo.jpg")
-
         @app.get("/")
         def index():
             return FileResponse(dist / "index.html", headers={"Cache-Control": "no-cache"})
     return app
-
-
-app = create_app()

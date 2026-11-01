@@ -18,7 +18,7 @@ args = parser.parse_args()
 source = PdfReader(args.source / 'modelos.pdf')
 meta = json.loads((args.source / 'modelos.json').read_text())
 assert len(source.pages) == len(meta['models']) == 17
-pdfmetrics.registerFont(TTFont('PagelsModelBold', str(args.assets / 'LiberationSans-Bold.ttf')))
+pdfmetrics.registerFont(TTFont('PagelsModelBold', str(Path(__file__).resolve().parents[3] / 'assets' / 'fonts' / 'LiberationSans-Bold.ttf')))
 writer = PdfWriter()
 for page in source.pages:
     writer.add_page(page)
@@ -110,7 +110,15 @@ writer.add_metadata({'/Title':'Modelos Pagels - 23 faixas','/Producer':'Pagels C
 with (args.assets / 'modelos.pdf').open('wb') as target:
     writer.write(target)
 # Gallery order follows the graduation sequence; existing page numbers stay fixed.
+# Preserve the profile metadata (formats and visual grouping) when expanding it.
 meta['models'][6:6] = new_models
+meta['schema'] = 'certificates.shared-pdf-templates/1.0'
+for model in meta['models']:
+    mid = model['id']
+    model['visual'] = {'kind':'belt', 'color':mid.split('_')[0], 'stripe':mid.split('_e_')[1] if '_e_' in mid else '', 'degree':model.get('degree') or 0}
+    if mid.startswith('preta'):
+        model['group'] = 'preta'
+meta['fields'][0].setdefault('format', '{nome_aluno}')
 (args.assets / 'modelos.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2)+'\n')
 result = PdfReader(args.assets / 'modelos.pdf')
 assert len(result.pages) == 23

@@ -1,10 +1,11 @@
 import os
 import signal
 from pathlib import Path
+from .profiles import load_profile, env
 
 if __name__ == "__main__":
     root = Path(__file__).resolve().parents[1]
-    data = Path(os.environ.get("PAGELS_DATA_DIR", root / "data"))
+    data = Path(env("DATA_DIR", load_profile().default_data_dir))
     try:
         pid = int((data / "servidor.pid").read_text().strip())
         process = Path(f"/proc/{pid}")

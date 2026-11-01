@@ -1,19 +1,20 @@
-name: pagels-certificados
+name: ${CERTIFICATES_INSTANCE:-pagels-certificados}
 
 services:
   certificados:
-    image: pagels-certificados:${PAGELS_IMAGE_TAG:-1.1.2}
+    image: gerador-certificados:${CERTIFICATES_IMAGE_TAG:-${PAGELS_IMAGE_TAG:-1.2.0}}
     build:
       context: .
     restart: unless-stopped
     init: true
-    user: "${PAGELS_UID:-10001}:${PAGELS_GID:-10001}"
+    user: "${CERTIFICATES_UID:-${PAGELS_UID:-10001}}:${CERTIFICATES_GID:-${PAGELS_GID:-10001}}"
     environment:
-      PAGELS_DATA_DIR: /data
+      CERTIFICATES_DATA_DIR: /data
+      CERTIFICATES_PROFILE: ${CERTIFICATES_PROFILE:-pagels-jiu-jitsu}
     ports:
-      - "${PAGELS_BIND_IP:-192.168.15.9}:${PAGELS_PORT:-8090}:8090"
+      - "${CERTIFICATES_BIND_IP:-${PAGELS_BIND_IP:-127.0.0.1}}:${CERTIFICATES_PORT:-${PAGELS_PORT:-8090}}:8090"
     volumes:
-      - ./data:/data
+      - ${CERTIFICATES_DATA_PATH:-./data}:/data
     read_only: true
     tmpfs:
       - /tmp:rw,nosuid,noexec,size=128m,mode=1777

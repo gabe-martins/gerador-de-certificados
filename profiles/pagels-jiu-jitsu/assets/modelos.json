@@ -1,5 +1,5 @@
 {
-  "schema": "pagels.shared-pdf-templates/1.0",
+  "schema": "certificates.shared-pdf-templates/1.0",
   "base_pdf": "modelos.pdf",
   "page_numbering": "1-based",
   "page": {
@@ -55,7 +55,8 @@
       "vertical_alignment": "middle",
       "wrap": false,
       "overflow": "review_required",
-      "reference_baseline_pdf_pt": 331.143
+      "reference_baseline_pdf_pt": 331.143,
+      "format": "{nome_aluno}"
     },
     {
       "name": "local_data",
@@ -87,139 +88,285 @@
       "id": "cinza_e_branca",
       "label": "Faixa Cinza e Branca",
       "page": 1,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "cinza",
+        "stripe": "branca",
+        "degree": 0
+      }
     },
     {
       "id": "cinza",
       "label": "Faixa Cinza",
       "page": 2,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "cinza",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "cinza_e_preta",
       "label": "Faixa Cinza e Preta",
       "page": 3,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "cinza",
+        "stripe": "preta",
+        "degree": 0
+      }
     },
     {
       "id": "amarela_e_branca",
       "label": "Faixa Amarela e Branca",
       "page": 4,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "amarela",
+        "stripe": "branca",
+        "degree": 0
+      }
     },
     {
       "id": "amarela",
       "label": "Faixa Amarela",
       "page": 5,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "amarela",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "amarela_e_preta",
       "label": "Faixa Amarela e Preta",
       "page": 6,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "amarela",
+        "stripe": "preta",
+        "degree": 0
+      }
     },
     {
       "id": "laranja_e_branca",
       "label": "Faixa Laranja e Branca",
       "page": 18,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "laranja",
+        "stripe": "branca",
+        "degree": 0
+      }
     },
     {
       "id": "laranja",
       "label": "Faixa Laranja",
       "page": 19,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "laranja",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "laranja_e_preta",
       "label": "Faixa Laranja e Preta",
       "page": 20,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "laranja",
+        "stripe": "preta",
+        "degree": 0
+      }
     },
     {
       "id": "verde_e_branca",
       "label": "Faixa Verde e Branca",
       "page": 21,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "verde",
+        "stripe": "branca",
+        "degree": 0
+      }
     },
     {
       "id": "verde",
       "label": "Faixa Verde",
       "page": 22,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "verde",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "verde_e_preta",
       "label": "Faixa Verde e Preta",
       "page": 23,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "verde",
+        "stripe": "preta",
+        "degree": 0
+      }
     },
     {
       "id": "azul",
       "label": "Faixa Azul",
       "page": 7,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "azul",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "roxa",
       "label": "Faixa Roxa",
       "page": 8,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "roxa",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "marrom",
       "label": "Faixa Marrom",
       "page": 9,
-      "degree": null
+      "degree": null,
+      "visual": {
+        "kind": "belt",
+        "color": "marrom",
+        "stripe": "",
+        "degree": 0
+      }
     },
     {
       "id": "preta",
       "label": "Faixa Preta",
       "page": 10,
-      "degree": 0
+      "degree": 0,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 0
+      },
+      "group": "preta"
     },
     {
       "id": "preta_1_grau",
       "label": "Faixa Preta 1º Grau",
       "page": 11,
-      "degree": 1
+      "degree": 1,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 1
+      },
+      "group": "preta"
     },
     {
       "id": "preta_2_grau",
       "label": "Faixa Preta 2º Grau",
       "page": 12,
-      "degree": 2
+      "degree": 2,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 2
+      },
+      "group": "preta"
     },
     {
       "id": "preta_3_grau",
       "label": "Faixa Preta 3º Grau",
       "page": 13,
-      "degree": 3
+      "degree": 3,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 3
+      },
+      "group": "preta"
     },
     {
       "id": "preta_4_grau",
       "label": "Faixa Preta 4º Grau",
       "page": 14,
-      "degree": 4
+      "degree": 4,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 4
+      },
+      "group": "preta"
     },
     {
       "id": "preta_5_grau",
       "label": "Faixa Preta 5º Grau",
       "page": 15,
-      "degree": 5
+      "degree": 5,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 5
+      },
+      "group": "preta"
     },
     {
       "id": "preta_6_grau",
       "label": "Faixa Preta 6º Grau",
       "page": 16,
-      "degree": 6
+      "degree": 6,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 6
+      },
+      "group": "preta"
     },
     {
       "id": "preta_7_grau",
       "label": "Faixa Preta 7º Grau",
       "page": 17,
-      "degree": 7
+      "degree": 7,
+      "visual": {
+        "kind": "belt",
+        "color": "preta",
+        "stripe": "",
+        "degree": 7
+      },
+      "group": "preta"
     }
   ]
 }

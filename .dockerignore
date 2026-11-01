@@ -11,5 +11,6 @@ outputs
 .env
 .env.*
 !.env.example
+backups
 frontend/dist
 tests

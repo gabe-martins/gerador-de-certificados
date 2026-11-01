@@ -13,7 +13,13 @@ from openpyxl import Workbook
 from pypdf import PdfReader
 
 from server.main import create_app
-from server.pdf_engine import MODELS, META, fit, generate, validate, local_text
+from server.pdf_engine import CertificateEngine
+from server.profiles import load_profile
+
+PROFILE = load_profile("pagels-jiu-jitsu")
+ENGINE = CertificateEngine(PROFILE)
+MODELS, META = ENGINE.models, ENGINE.meta
+fit, generate, validate, local_text = ENGINE.fit, ENGINE.generate, ENGINE.validate, ENGINE.local_text
 from server.imports import model_id
 
 
@@ -33,7 +39,7 @@ def emit(client, rows=None, **kw):
 
 def test_all_models_and_diacritics():
     for model in MODELS.values():
-        assert model_id(model["label"]) == model["id"]
+        assert model_id(model["label"], PROFILE) == model["id"]
     rows = [row(modelo_id=model) for model in MODELS]
     pdf = PdfReader(io.BytesIO(generate(rows)))
     assert len(pdf.pages) == 23

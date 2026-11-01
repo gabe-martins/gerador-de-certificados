@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "pagels-jiu-jitsu",
+  "name": "Pagels Jiu-Jitsu",
+  "short_name": "PAGELS",
+  "tagline": "Feito para celebrar a evolução.",
+  "accent_color": "#c62828",
+  "logo": "logo.jpg",
+  "timezone": "America/Sao_Paulo",
+  "font_file": "LiberationSans-Bold.ttf",
+  "default_model": "azul",
+  "labels": {
+    "recipient": "Nome do aluno",
+    "template": "Faixa",
+    "date": "Data da graduação",
+    "selection": "Graduação conquistada"
+  },
+  "imports": {
+    "aliases": {
+      "aluno": "nome_aluno",
+      "nome do aluno": "nome_aluno",
+      "nome aluno": "nome_aluno",
+      "faixa": "modelo_id",
+      "graduacao": "modelo_id",
+      "grau": "degree"
+    },
+    "label_prefixes": [
+      "Faixa "
+    ],
+    "model_aliases": {
+      "amarelo": "amarela"
+    }
+  },
+  "database_name": "pagels.sqlite3"
+}
