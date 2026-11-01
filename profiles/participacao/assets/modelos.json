@@ -1,0 +1,50 @@
+{
+  "schema": "certificates.shared-pdf-templates/1.0",
+  "base_pdf": "modelos.pdf",
+  "page": {
+    "width_pt": 841.8897637795277,
+    "height_pt": 595.2755905511812,
+    "width_mm": 297,
+    "height_mm": 210,
+    "orientation": "landscape"
+  },
+  "models": [
+    {
+      "id": "participacao",
+      "label": "Participação",
+      "page": 1
+    }
+  ],
+  "fields": [
+    {
+      "name": "nome_aluno",
+      "input_keys": [
+        "nome_aluno"
+      ],
+      "format": "{nome_aluno}",
+      "placeholder": "NOME DO PARTICIPANTE",
+      "box_mm": {
+        "width": 265
+      },
+      "font_size_pt": 30,
+      "min_font_size_pt": 22,
+      "reference_baseline_pdf_pt": 305
+    },
+    {
+      "name": "local_data",
+      "input_keys": [
+        "cidade",
+        "uf",
+        "data"
+      ],
+      "format": "{cidade}/{uf}, {data_por_extenso}.",
+      "placeholder": "CIDADE/UF, DATA.",
+      "box_mm": {
+        "width": 265
+      },
+      "font_size_pt": 18,
+      "min_font_size_pt": 14,
+      "reference_baseline_pdf_pt": 190
+    }
+  ]
+}

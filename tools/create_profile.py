@@ -46,7 +46,7 @@ def create_profile(identifier, name, destination=None):
     }
     for path, value in ((directory / "profile.json", config), (assets / "modelos.json", meta)):
         path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    # Neutral starter artwork; no Pagels logo, text or belt designs are copied.
+    # Neutral starter artwork; no existing organization artwork is copied.
     canvas = Canvas(str(assets / "modelos.pdf"), pagesize=(width, height))
     canvas.setStrokeColorRGB(.14, .36, .54)
     canvas.setLineWidth(2)

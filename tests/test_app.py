@@ -16,7 +16,7 @@ from server.main import create_app
 from server.pdf_engine import CertificateEngine
 from server.profiles import load_profile
 
-PROFILE = load_profile("pagels-jiu-jitsu")
+PROFILE = load_profile()
 ENGINE = CertificateEngine(PROFILE)
 MODELS, META = ENGINE.models, ENGINE.meta
 fit, generate, validate, local_text = ENGINE.fit, ENGINE.generate, ENGINE.validate, ENGINE.local_text
@@ -30,7 +30,7 @@ def client(tmp_path):
 
 
 def row(**patch):
-    return {"nome_aluno": "João Antônio Gonçalves", "cidade": "São José", "uf": "SC", "data": "2026-10-29", "modelo_id": "azul"} | patch
+    return {"nome_aluno": "João Antônio Gonçalves", "cidade": "São José", "uf": "SC", "data": "2026-10-29", "modelo_id": "participacao"} | patch
 
 
 def emit(client, rows=None, **kw):
@@ -42,12 +42,12 @@ def test_all_models_and_diacritics():
         assert model_id(model["label"], PROFILE) == model["id"]
     rows = [row(modelo_id=model) for model in MODELS]
     pdf = PdfReader(io.BytesIO(generate(rows)))
-    assert len(pdf.pages) == 23
+    assert len(pdf.pages) == len(MODELS)
     for model, page in zip(MODELS.values(), pdf.pages):
         text = page.extract_text()
         assert "João Antônio Gonçalves" in text
-        assert model["label"] + "." in text
-        assert "Brasil – São José/SC, 29 de outubro de 2026." in text
+        assert model["label"].lower() in text.lower()
+        assert "São José/SC, 29 de outubro de 2026." in text
         assert float(page.mediabox.width) == pytest.approx(META["page"]["width_pt"])
     # Repeated calls cannot leave names merged into the shared base PDF.
     other = PdfReader(io.BytesIO(generate([row(nome_aluno="Maria da Conceição")])))
@@ -65,7 +65,7 @@ def test_date_format_in_preview_and_batch_exports(client):
         response = client.post("/api/preview", json=item)
         assert response.status_code == 200
         text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
-        assert f"Brasil – São José/SC, {expected}." in text
+        assert f"São José/SC, {expected}." in text
     assert client.get("/api/emissoes").json()["total"] == 0
 
     response = emit(client, rows)
@@ -86,14 +86,14 @@ def test_date_format_in_preview_and_batch_exports(client):
     assert history["items"][0]["data"] == "2026-12-01"
 
 
-def test_repeated_belt_models_keep_each_students_fields_separate(client):
+def test_repeated_models_keep_each_recipients_fields_separate(client):
     cases = [
-        ("Ana Paula Lima", "São José", "SC", "cinza_e_branca"),
-        ("Bruno Henrique Costa", "Curitiba", "PR", "cinza_e_branca"),
-        ("Carla Araújo Martins", "Niterói", "RJ", "cinza_e_branca"),
-        ("Diego Rafael Alves", "Recife", "PE", "amarela"),
-        ("Elisa Nogueira Souza", "Salvador", "BA", "amarela"),
-        ("Felipe Augusto Silva", "São Paulo", "SP", "laranja"),
+        ("Ana Paula Lima", "São José", "SC", "participacao"),
+        ("Bruno Henrique Costa", "Curitiba", "PR", "participacao"),
+        ("Carla Araújo Martins", "Niterói", "RJ", "participacao"),
+        ("Diego Rafael Alves", "Recife", "PE", "participacao"),
+        ("Elisa Nogueira Souza", "Salvador", "BA", "participacao"),
+        ("Felipe Augusto Silva", "São Paulo", "SP", "participacao"),
     ]
     rows = [row(nome_aluno=name, cidade=city, uf=state, modelo_id=model,
                 data=f"2026-12-{index+1:02d}")
@@ -115,27 +115,27 @@ def test_repeated_belt_models_keep_each_students_fields_separate(client):
         for text in texts:
             assert [r["nome_aluno"] for r in rows if r["nome_aluno"] in text] == [expected["nome_aluno"]]
             assert [local_text(r) for r in rows if local_text(r) in text] == [local_text(expected)]
-            assert text.count("Brasil –") == 1
+            assert text.count(local_text(expected)) == 1
 
 
 def test_fitting_and_rejecting_overflow(client):
     field = META["fields"][0]
     long_name = "Maria Aparecida de Albuquerque e Vasconcelos da Silva"
-    assert 24 <= fit(long_name, field) < 32
+    assert field["min_font_size_pt"] <= fit(long_name, field) < field["font_size_pt"]
     assert validate(row(nome_aluno="W"*100))[1]["nome_aluno"]
-    assert validate(row(nome_aluno="Aluno 🥋"))[1]["nome_aluno"]
+    assert validate(row(nome_aluno="Participante 🥋"))[1]["nome_aluno"]
     assert emit(client, [row(nome_aluno="W"*100)]).status_code == 422
     assert client.get("/api/emissoes").json()["total"] == 0
 
 
 def test_preview_no_history_and_invalid_fields(client):
-    response = client.post("/api/preview", json={"modelo_id": "preta_7_grau"})
+    response = client.post("/api/preview", json={"modelo_id": "participacao"})
     assert response.status_code == 200
-    assert "NOME DO ALUNO" in PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
+    assert "NOME DO PARTICIPANTE" in PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
     assert client.get("/api/emissoes").json()["total"] == 0
     assert emit(client, [row(uf="XX")]).status_code == 422
     assert emit(client, [row(data="2026-02-30")]).status_code == 422
-    assert emit(client, [row(modelo_id="branca")]).status_code == 422
+    assert emit(client, [row(modelo_id="inexistente")]).status_code == 422
 
 
 def test_issue_retry_duplicate_and_original_pdf(client, tmp_path):
@@ -166,7 +166,7 @@ def test_concurrent_retry(client):
 
 
 def test_batch_100_and_zip(client):
-    rows = [row(nome_aluno=f"Aluno de Teste {i+1:03d}", modelo_id=list(MODELS)[i % len(MODELS)]) for i in range(100)]
+    rows = [row(nome_aluno=f"Participante de Teste {i+1:03d}", modelo_id=list(MODELS)[i % len(MODELS)]) for i in range(100)]
     start = time.perf_counter()
     response = emit(client, rows)
     assert response.status_code == 200, response.text
@@ -178,36 +178,36 @@ def test_batch_100_and_zip(client):
         assert [r["nome_aluno"] for r in rows if r["nome_aluno"] in text] == [rows[i]["nome_aluno"]]
     archive = ZipFile(io.BytesIO(client.get(value["zip_url"]).content))
     assert len(archive.namelist()) == len(set(archive.namelist())) == 100
-    assert "Aluno de Teste 100" in PdfReader(io.BytesIO(archive.read(archive.namelist()[-1]))).pages[0].extract_text()
+    assert "Participante de Teste 100" in PdfReader(io.BytesIO(archive.read(archive.namelist()[-1]))).pages[0].extract_text()
     assert client.get("/api/emissoes").json()["total"] == 100
     assert len(client.get("/api/emissoes?page=2").json()["items"]) == 50
     print(f"Lote100 + download PDF + ZIP: {time.perf_counter()-start:.2f}s")
 
 
 def test_import_csv_inheritance_and_per_row_errors(client):
-    data = "nome;cidade;uf;data;faixa\r\nAna da Conceição;;;;Roxa\r\nJosé;Curitiba;XX;30/02/2026;Azul\r\n"
-    res = client.post("/api/lotes/importar", files={"file": ("alunos.csv", data.encode('utf-8-sig'))}, data={"defaults": json.dumps(row())})
+    data = "nome;cidade;uf;data;modelo\r\nAna da Conceição;;;;Participação\r\nJosé;Curitiba;XX;30/02/2026;Participação\r\n"
+    res = client.post("/api/lotes/importar", files={"file": ("participantes.csv", data.encode('utf-8-sig'))}, data={"defaults": json.dumps(row())})
     assert res.status_code == 200, res.text
     value = res.json()
     assert value["valid"] == 1
     assert value["items"][0]["row"]["cidade"] == "São José"
-    assert value["items"][0]["row"]["modelo_id"] == "roxa"
+    assert value["items"][0]["row"]["modelo_id"] == "participacao"
     assert set(value["items"][1]["errors"]) == {"uf", "data"}
     assert client.get("/api/emissoes").json()["total"] == 0
 
 
-def test_xlsx_date_degree_and_formula(client):
+def test_xlsx_date_and_formula(client):
     from datetime import date
     wb = Workbook()
     ws = wb.active
-    ws.append(["nome", "cidade", "uf", "data", "faixa", "grau"])
-    ws.append(["Luís André", "Florianópolis", "SC", date(2026, 10, 29), "preta", 7])
+    ws.append(["nome", "cidade", "uf", "data", "modelo"])
+    ws.append(["Luís André", "Florianópolis", "SC", date(2026, 10, 29), "Participação"])
     def upload():
         buf = io.BytesIO(); wb.save(buf)
-        return client.post("/api/lotes/importar", files={"file": ("alunos.xlsx", buf.getvalue())})
+        return client.post("/api/lotes/importar", files={"file": ("participantes.xlsx", buf.getvalue())})
     res = upload()
     assert res.status_code == 200, res.text
-    assert res.json()["items"][0]["row"]["modelo_id"] == "preta_7_grau"
+    assert res.json()["items"][0]["row"]["modelo_id"] == "participacao"
     assert res.json()["items"][0]["row"]["data"] == "2026-10-29"
     ws['A2'] = '=CONCAT("Ana","Silva")'
     assert upload().status_code == 422
@@ -227,7 +227,7 @@ def test_settings_backup_and_origin(client, tmp_path):
     for name, sha in manifest["sha256"].items():
         assert hashlib.sha256(archive.read(name)).hexdigest() == sha
     assert archive.read(f'data/pdfs/{result["id"]}.pdf') == client.get(result["pdf_url"]).content
-    path = tmp_path / 'restore.sqlite3'; path.write_bytes(archive.read('data/pagels.sqlite3'))
+    path = tmp_path / 'restore.sqlite3'; path.write_bytes(archive.read('data/certificates.sqlite3'))
     with sqlite3.connect(path) as conn:
         assert conn.execute('PRAGMA integrity_check').fetchone()[0] == 'ok'
         assert conn.execute('SELECT count(*) FROM certificates').fetchone()[0] == 1
@@ -237,7 +237,7 @@ def test_settings_backup_and_origin(client, tmp_path):
 def test_import_exactly_500_rows_and_search_accents(client):
     wb = Workbook(); ws = wb.active; ws.append(["nome"])
     for i in range(500):
-        ws.append([f"Aluno {i}"])
+        ws.append([f"Participante {i}"])
     buf = io.BytesIO(); wb.save(buf)
     response = client.post('/api/lotes/importar', files={"file": ("500.xlsx", buf.getvalue())}, data={"defaults": json.dumps(row())})
     assert response.status_code == 200, response.text
@@ -246,33 +246,33 @@ def test_import_exactly_500_rows_and_search_accents(client):
     assert client.get('/api/emissoes?q=JOAO%20ANTONIO').json()["total"] == 1
 
 
-def test_new_belts_import_and_individual_exports(client):
-    ids = ['laranja_e_branca', 'laranja', 'laranja_e_preta', 'verde_e_branca', 'verde', 'verde_e_preta']
+def test_catalog_import_and_individual_exports(client):
+    ids = list(MODELS)
     defaults = row()
-    csv_data = 'nome;faixa\n' + '\n'.join(f'Aluno Novo {i};{MODELS[mid]["label"]}' for i, mid in enumerate(ids))
-    result = client.post('/api/lotes/importar', files={'file':('novas.csv',csv_data.encode('utf-8-sig'))}, data={'defaults':json.dumps(defaults)})
+    csv_data = 'nome;modelo\n' + '\n'.join(f'Participante Novo {i};{MODELS[mid]["label"]}' for i, mid in enumerate(ids))
+    result = client.post('/api/lotes/importar', files={'file':('novos.csv',csv_data.encode('utf-8-sig'))}, data={'defaults':json.dumps(defaults)})
     assert result.status_code == 200, result.text
-    assert result.json()['valid'] == 6
+    assert result.json()['valid'] == len(ids)
     assert [item['row']['modelo_id'] for item in result.json()['items']] == ids
     wb = Workbook(); ws = wb.active; ws.append(['nome_aluno','modelo_id'])
-    for i,mid in enumerate(ids): ws.append([f'Aluno XLSX {i}',mid])
+    for i, mid in enumerate(ids): ws.append([f'Participante XLSX {i}',mid])
     buffer = io.BytesIO(); wb.save(buffer)
-    imported = client.post('/api/lotes/importar', files={'file':('novas.xlsx',buffer.getvalue())}, data={'defaults':json.dumps(defaults)})
-    assert imported.json()['valid'] == 6
+    imported = client.post('/api/lotes/importar', files={'file':('novos.xlsx',buffer.getvalue())}, data={'defaults':json.dumps(defaults)})
+    assert imported.json()['valid'] == len(ids)
     rows = [item['row'] for item in imported.json()['items']]
     value = emit(client, rows).json()
-    for i,mid in enumerate(ids):
+    for i, mid in enumerate(ids):
         response = client.get(f'/api/emissoes/{value["id"]}/certificados/{i}/pdf')
         assert response.status_code == 200
         text = PdfReader(io.BytesIO(response.content)).pages[0].extract_text()
-        assert MODELS[mid]['label'] + '.' in text
-        assert 'Faixa Amarela' not in text
+        assert rows[i]['nome_aluno'] in text
+        assert MODELS[mid]['label'].lower() in text.lower()
     assert client.get('/api/modelos').json()['models'] == list(MODELS.values())
-    assert client.get('/api/health').json()['models'] == 23
+    assert client.get('/api/health').json()['models'] == len(ids)
 
 
 def test_new_template_updates_do_not_recreate_historical_pdfs(client, tmp_path):
-    old_content = generate([row(nome_aluno='Documento preservado',modelo_id='azul')])
+    old_content = generate([row(nome_aluno='Documento preservado',modelo_id='participacao')])
     # History downloads must use the stored bytes, independently of the current renderer.
     issued = emit(client).json()
     path = tmp_path/'pdfs'/f'{issued["id"]}.pdf'

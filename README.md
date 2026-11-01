@@ -1,6 +1,6 @@
 # Gerador de Certificados
 
-Aplicação web para emitir certificados individuais e em lote a partir de modelos PDF. O núcleo é compartilhado; cada caso de uso tem um **perfil** com marca, textos, modelos e regras de importação. O primeiro perfil é **Pagels Jiu-Jitsu**, selecionado por padrão, com seus 23 modelos de graduação.
+Aplicação web para emitir certificados individuais e em lote a partir de modelos PDF. O núcleo é compartilhado; cada caso de uso tem um **perfil** com marca, textos, modelos e regras de importação. A edição generalista inclui um perfil neutro de **participação**, pronto para cursos e eventos com os dados básicos de emissão.
 
 A aplicação funciona na rede local, sem login e sem serviços externos durante o uso. Quem tiver acesso ao endereço poderá emitir, consultar e baixar documentos e backups. Use um único processo servidor.
 
@@ -12,7 +12,7 @@ Repositório: [gabe-martins/gerador-de-certificados](https://github.com/gabe-mar
 - `dev`: desenvolvimento do gerador generalista; atualizada com a versão publicada em `main`.
 - `pagels-jiu-jitsu`: aplicação da academia, com seu perfil, 23 modelos e compatibilidade com a instalação existente.
 
-Este pacote mantém a configuração da Pagels. Para continuar a aplicação da academia, use a branch `pagels-jiu-jitsu`. Para o núcleo generalista, use `dev` ou `main`. O fluxo de atualização está em [docs/branches.md](docs/branches.md).
+Esta branch contém somente a edição generalista. O pacote completo da Pagels está na branch `pagels-jiu-jitsu`. O fluxo de atualização está em [docs/branches.md](docs/branches.md).
 
 ## Estrutura
 
@@ -29,13 +29,13 @@ frontend/src/
   features/                     lote, histórico, modelos e preferências
   lib/                          contratos, API, formulários e contexto do perfil
 profiles/
-  pagels-jiu-jitsu/
+  default.json                  perfil padrão desta edição
+  participacao/
     profile.json                identidade, rótulos, padrão e aliases
-    assets/                     logo, PDF e posições/textos variáveis
-    tools/                      manutenção específica das artes Pagels
+    assets/                     PDF neutro e posições/textos variáveis
 assets/fonts/                   fontes compartilhadas e licença
 tools/create_profile.py         criação de novos perfis independentes
-tests/                          regressões da Pagels e isolamento de perfis
+tests/                          emissão, persistência, backup e isolamento de perfis
 docs/                           arquitetura, adaptação, uso e operação
 ```
 
@@ -54,12 +54,14 @@ bash iniciar.sh
 
 Abra [localhost:8090](http://localhost:8090). O backend serve a interface compilada. Para encerrar: Ctrl+C ou `bash parar.sh`. Em desenvolvimento, `npm --prefix frontend run dev` serve a interface na porta 5173 e encaminha `/api` para 8090.
 
-O perfil padrão usa `data/pagels.sqlite3` e `data/pdfs/`, preservando histórico e PDFs existentes. As variáveis antigas `PAGELS_HOST`, `PAGELS_PORT`, `PAGELS_DATA_DIR` e `PAGELS_PYTHON` continuam aceitas; `CERTIFICATES_*` tem precedência.
+O perfil padrão usa `data/participacao/certificates.sqlite3` e `data/participacao/pdfs/`. Outros perfis usam `data/<id>/`. Os arquivos locais da antiga instalação da academia permanecem separados e não são movidos ao trocar de branch.
 
 ```bash
-CERTIFICATES_PROFILE=pagels-jiu-jitsu \
+CERTIFICATES_PROFILE=participacao \
 CERTIFICATES_HOST=127.0.0.1 CERTIFICATES_PORT=8090 bash iniciar.sh
 ```
+
+Para a aplicação da Pagels, use a branch `pagels-jiu-jitsu`, com sua própria configuração de implantação. Não use um arquivo `.env` de outra aplicação na edição generalista.
 
 ## Adaptar para outro uso
 
@@ -79,7 +81,7 @@ O contrato atual contém nome, cidade, UF brasileira, data e modelo. Ele cobre g
 ## Operação e validação
 
 - [Docker e atualização de instalações existentes](docs/docker.md)
-- [Uso da Pagels Jiu-Jitsu](docs/pagels-jiu-jitsu.md)
+- [Branches e fluxo de atualização](docs/branches.md)
 - [Arquitetura e perfis](docs/profiles.md)
 
 ```bash
@@ -88,4 +90,4 @@ O contrato atual contém nome, cidade, UF brasileira, data e modelo. Ele cobre g
 npm --prefix frontend run build
 ```
 
-Os testes cobrem os 23 modelos Pagels, acentos, limites de texto, datas, lotes, repetição de modelos, importação, duplicados, reenvio concorrente, persistência e integridade de backup. Também exercitam outro caso de uso, restauração e separação dos dados entre perfis. Testes locais não substituem a verificação no servidor Docker e na impressora.
+Os testes cobrem o catálogo de modelos, acentos, limites de texto, datas, lotes, repetição de modelos, importação, duplicados, reenvio concorrente, persistência e integridade de backup. Também exercitam outro caso de uso, restauração e separação dos dados entre perfis. Testes locais não substituem a verificação no servidor Docker e na impressora.

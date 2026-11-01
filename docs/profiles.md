@@ -7,9 +7,9 @@ O gerador mantém quatro responsabilidades separadas:
 3. `server/storage.py` preserva histórico e PDFs em um diretório vinculado ao perfil.
 4. O frontend consulta `/api/perfil` e `/api/modelos` para montar a identidade visual e os formulários.
 
-Não há marca nem identificadores de faixa fixos no motor PDF ou na interface. Faixas e graus são descritos pelos modelos da Pagels; modelos sem esse metadado usam seleção simples e ícone genérico.
+O perfil padrão `participacao` usa arte neutra e seleção simples. O núcleo e a interface recebem identidade, modelos e regras do pacote selecionado.
 
-O perfil padrão é selecionado por `profiles/default.json`. O campo opcional `legacy_env_prefix` nesse arquivo permite que uma aplicação especializada continue aceitando as variáveis de sua implantação antiga. O campo opcional `database_name` em `profile.json` preserva o nome do banco de uma instalação existente; o padrão é `certificates.sqlite3`. O campo opcional `data_subdirectory` define o subdiretório em `data/`; o padrão é o identificador do perfil. Na Pagels, a string vazia preserva o caminho histórico `data/`.
+O perfil padrão é selecionado por `profiles/default.json`. O campo opcional `legacy_env_prefix` nesse arquivo permite que uma aplicação especializada continue aceitando as variáveis de sua implantação antiga. O campo opcional `database_name` em `profile.json` preserva o nome do banco de uma instalação existente; o padrão é `certificates.sqlite3`. O campo opcional `data_subdirectory` define o subdiretório em `data/`; o padrão é o identificador do perfil. Uma string vazia permite preservar o caminho `data/` de uma instalação anterior, quando necessário.
 
 ## Criar um perfil
 
@@ -19,7 +19,7 @@ Na raiz do repositório, após instalar as dependências Python:
 .venv/bin/python -m tools.create_profile meu-evento --name "Meu Evento"
 ```
 
-O comando não sobrescreve diretórios existentes. Ele gera um PDF de participação com arte neutra e os arquivos de configuração correspondentes. Nenhuma arte da Pagels é copiada.
+O comando não sobrescreve diretórios existentes. Ele gera um PDF de participação com arte neutra e os arquivos de configuração correspondentes. O novo perfil recebe sua própria arte inicial.
 
 ```text
 profiles/meu-evento/
@@ -58,19 +58,19 @@ Reinicie o servidor após alterar o pacote. A versão dos modelos é um hash dos
 
 Cada campo contém `name`, `input_keys`, `format`, `placeholder`, `box_mm.width`, `font_size_pt`, `min_font_size_pt` e `reference_baseline_pdf_pt`. A linha é centralizada horizontalmente; a posição vertical usa pontos PDF a partir da base. O texto reduz até o tamanho mínimo e, se ainda não couber, a emissão é recusada para revisão.
 
-Use `{nome_aluno}` para o nome e, por exemplo, `{cidade}/{uf}, {data_por_extenso}.` para a segunda linha. A data por extenso usa português com dois dígitos no dia. Os nomes técnicos `nome_aluno`, `cidade`, `uf`, `data`, `modelo_id` são mantidos para compatibilidade com os bancos e as planilhas da primeira versão; `nome_aluno` representa o destinatário em qualquer perfil. O gerador inicial usa duas linhas (`nome_aluno` e `local_data`).
+Use `{nome_aluno}` para o nome e, por exemplo, `{cidade}/{uf}, {data_por_extenso}.` para a segunda linha. A data por extenso usa português com dois dígitos no dia. Os nomes técnicos `nome_aluno`, `cidade`, `uf`, `data`, `modelo_id` formam o contrato estável de bancos e planilhas; `nome_aluno` representa o destinatário em qualquer perfil. O gerador inicial usa duas linhas (`nome_aluno` e `local_data`).
 
 O contrato atual exige todos esses dados, valida UFs brasileiras e usa armazenamento ISO para a data. Não oferece edição arbitrária de formulários, carga horária, assinatura digital, idiomas adicionais ou troca de perfil pela interface. Para novos campos, estenda conjuntamente os contratos, persistência, importação, validação e frontend.
 
-Para variantes, os modelos podem compartilhar `group`; o seletor oferece as opções do mesmo grupo. Na Pagels, `group: "preta"` reúne graus 0–7, e o alias de importação `grau` aponta para `degree`. O metadado opcional `visual` descreve a faixa (`kind: "belt"`, `color`, `stripe`, `degree`) e serve apenas à interface.
+Para variantes, os modelos podem compartilhar `group`; o seletor oferece as opções do mesmo grupo. O alias de importação `grau` pode apontar para `degree`, caso o perfil trabalhe com graus numéricos. O metadado opcional `visual` descreve a faixa (`kind: "belt"`, `color`, `stripe`, `degree`) e serve apenas à interface.
 
 ## Dados e compatibilidade
 
-- Sem variáveis, a Pagels continua em `data/pagels.sqlite3` e `data/pdfs/`.
+- Sem variáveis, o perfil neutro usa `data/participacao/certificates.sqlite3` e `data/participacao/pdfs/`.
 - Outros perfis usam `data/<id>/certificates.sqlite3` e `data/<id>/pdfs/` no modo local.
 - `CERTIFICATES_DATA_DIR` substitui o diretório no backend. No Compose, configure **`CERTIFICATES_DATA_PATH`** para o diretório do host; o contêiner grava sempre em `/data`.
 - `instance_profile` registra o identificador do perfil no banco. A abertura com outro identificador é recusada. Não altere o `id` de um perfil já em uso.
-- Ao abrir o banco antigo da Pagels, apenas o vínculo do perfil é adicionado. Os certificados e PDFs anteriores continuam sendo lidos dos mesmos locais.
+- Uma instalação sem vínculo de perfil recebe apenas a tabela de identificação; os certificados e PDFs já existentes são preservados.
 - PDFs emitidos são imutáveis. Atualizar a arte não regenera documentos do histórico.
 - `server.main.create_app(...)` é uma fábrica sem inicialização global; o processo é iniciado por `server.asgi:app`.
 
@@ -84,6 +84,6 @@ O backup novo (manifesto versão 2) inclui `data/`, `profiles/<id>/`, `assets/fo
 4. Restaure `profiles/` e `assets/` na raiz do projeto. Se o perfil estiver fora do repositório, restaure o pacote no caminho selecionado.
 5. Inicie com o perfil correspondente e confira histórico, PDFs e configurações.
 
-Backups antigos da Pagels (manifesto versão 1) continuam recuperáveis: restaure `data/` no local original; coloque `modelos.pdf` e `modelos.json` em `profiles/pagels-jiu-jitsu/assets/`, e a fonte/licença em `assets/fonts/`. Preserve o novo `profile.json`, altere `schema` para `certificates.shared-pdf-templates/1.0` e acrescente `"format": "{nome_aluno}"` ao campo `nome_aluno` do JSON antigo. Os metadados `visual` e `group` podem ser recuperados do JSON atual por `id` para manter o seletor de graus e os ícones. Essa restauração exige a mesma versão de arte compatível com o histórico; o código não modifica backups antigos automaticamente.
+Backups de aplicações especializadas devem ser restaurados com o código e o perfil correspondentes. Para a instalação da Pagels, use as instruções da branch `pagels-jiu-jitsu`. Não restaure o banco de outra aplicação sobre os dados do perfil neutro.
 
 Uma restauração substitui o estado; não mescla históricos. No Docker, arquivos do perfil fazem parte da imagem: depois de restaurá-los no projeto, reconstrua a imagem antes de iniciar.

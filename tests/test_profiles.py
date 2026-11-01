@@ -26,21 +26,21 @@ def participation(tmp_path):
 
 def test_second_use_case_is_independent_and_restorable(tmp_path, participation):
     data = tmp_path / "course-data"
-    with TestClient(create_app(data, profile=participation)) as course, TestClient(create_app(tmp_path / "pagels")) as pagels:
+    with TestClient(create_app(data, profile=participation)) as course, TestClient(create_app(tmp_path / "default")) as default:
         profile = course.get("/api/perfil").json()
         assert profile["name"] == "Curso de Fotografia"
         assert profile["logo_url"] is None
         assert profile["labels"]["template"] == "Certificado"
         assert course.get("/api/perfil/logo").status_code == 404
-        assert pagels.get("/api/perfil").json()["id"] == DEFAULT_PROFILE
-        assert pagels.get("/api/perfil/logo").headers["content-type"] == "image/jpeg"
+        assert default.get("/api/perfil").json()["id"] == DEFAULT_PROFILE
+        assert default.get("/api/perfil/logo").status_code == 404
         assert [m["id"] for m in course.get("/api/modelos").json()["models"]] == ["participacao"]
-        assert len(pagels.get("/api/modelos").json()["models"]) == 23
+        assert len(default.get("/api/modelos").json()["models"]) == 1
         # Empty preview uses the profile's own default and placeholder.
         preview = course.post("/api/preview", json={})
         text = PdfReader(io.BytesIO(preview.content)).pages[0].extract_text()
         assert "NOME DO PARTICIPANTE" in text
-        assert "Pagels" not in text and "Faixa" not in text
+        assert "CERTIFICADO DE PARTICIPAÇÃO" in text
         imported = course.post("/api/lotes/importar", files={"file": ("p.csv", b"nome;modelo\nAna;Participa\xe7\xe3o\n")}, data={"defaults": json.dumps(payload())})
         assert imported.json()["valid"] == 1
         assert imported.json()["items"][0]["row"]["modelo_id"] == "participacao"
@@ -49,11 +49,11 @@ def test_second_use_case_is_independent_and_restorable(tmp_path, participation):
         text = PdfReader(io.BytesIO(original)).pages[0].extract_text()
         assert "Ana da Conceição" in text
         assert "Curitiba/PR, 01 de dezembro de 2026." in text
-        assert "Brasil" not in text and "Faixa" not in text
-        assert pagels.get("/api/emissoes").json()["total"] == 0
+        assert "Brasil" not in text
+        assert default.get("/api/emissoes").json()["total"] == 0
         assert course.get("/api/emissoes").json()["total"] == 1
-        assert course.post("/api/lotes/validar", json={"rows": [payload("azul")]}).json()["valid"] == 0
-        assert pagels.post("/api/lotes/validar", json={"rows": [payload()]}).json()["valid"] == 0
+        assert course.post("/api/lotes/validar", json={"rows": [payload("inexistente")]}).json()["valid"] == 0
+        assert default.post("/api/lotes/validar", json={"rows": [payload("inexistente")]}).json()["valid"] == 0
         archive = ZipFile(io.BytesIO(course.get("/api/backup").content))
         manifest = json.loads(archive.read("manifesto.json"))
         assert manifest["profile"] == "curso-fotografia"
@@ -62,7 +62,7 @@ def test_second_use_case_is_independent_and_restorable(tmp_path, participation):
         for name, digest in manifest["sha256"].items():
             assert hashlib.sha256(archive.read(name)).hexdigest() == digest
         assert "profiles/curso-fotografia/profile.json" in archive.namelist()
-        assert "profiles/pagels-jiu-jitsu/profile.json" not in archive.namelist()
+        assert "profiles/participacao/profile.json" not in archive.namelist()
 
     # Restore exactly the layout exported by the application, and reopen it.
     restored = tmp_path / "restored"
@@ -72,15 +72,15 @@ def test_second_use_case_is_independent_and_restorable(tmp_path, participation):
         assert app.get(issued["pdf_url"]).content == original
 
 
-def test_existing_pagels_database_and_pdf_survive_profile_binding(tmp_path):
+def test_existing_database_and_pdf_survive_profile_binding(tmp_path):
     data = tmp_path / "legacy"
     data.mkdir()
     # Reproduce a pre-profile database by removing only the new binding table.
     with TestClient(create_app(data)) as app:
-        issued = app.post("/api/emissoes", json={"request_id": str(uuid4()), "rows": [payload("azul")]}).json()
+        issued = app.post("/api/emissoes", json={"request_id": str(uuid4()), "rows": [payload()]}).json()
         pdf = app.get(issued["pdf_url"]).content
         app.put("/api/configuracoes", json={"cidade": "Curitiba", "uf": "PR"})
-    with sqlite3.connect(data / "pagels.sqlite3") as db:
+    with sqlite3.connect(data / "certificates.sqlite3") as db:
         db.execute("DROP TABLE instance_profile")
     with TestClient(create_app(data)) as app:
         assert app.get("/api/emissoes").json()["total"] == 1
@@ -100,16 +100,16 @@ def test_profiles_cannot_reuse_another_profiles_data(tmp_path, participation):
         create_app(tmp_path / "shared", profile=second)
 
 
-def test_environment_selection_and_legacy_precedence(monkeypatch, tmp_path, participation):
+def test_environment_selection_and_default_data_path(monkeypatch, tmp_path, participation):
     monkeypatch.setenv("CERTIFICATES_PROFILE", str(participation))
-    monkeypatch.setenv("PAGELS_DATA_DIR", str(tmp_path / "old"))
     monkeypatch.setenv("CERTIFICATES_DATA_DIR", str(tmp_path / "new"))
     assert env("DATA_DIR") == str(tmp_path / "new")
     app = create_app()
     assert app.state.profile.id == "curso-fotografia"
     assert app.state.data_dir == tmp_path / "new"
     monkeypatch.delenv("CERTIFICATES_DATA_DIR")
-    assert env("DATA_DIR") == str(tmp_path / "old")
+    assert env("DATA_DIR") is None
+    assert load_profile().default_data_dir == ROOT / "data" / "curso-fotografia"
 
 
 @pytest.mark.parametrize("mutation", ["model", "page", "format", "color", "schema", "dimensions", "fields", "dependencies"])
@@ -149,5 +149,31 @@ def test_profile_scaffold_does_not_overwrite_existing_files(tmp_path, participat
 
 
 def test_default_data_directories_are_configured_per_profile(participation):
-    assert load_profile().default_data_dir == ROOT / "data"
+    assert load_profile().default_data_dir == ROOT / "data" / "participacao"
     assert load_profile(participation).default_data_dir == ROOT / "data" / "curso-fotografia"
+
+
+def test_custom_profile_variants_and_import_aliases(tmp_path, participation):
+    config_path = participation / "profile.json"
+    meta_path = participation / "assets/modelos.json"
+    config = json.loads(config_path.read_text())
+    meta = json.loads(meta_path.read_text())
+    config["default_model"] = "base"
+    config["imports"] = {"aliases": {"categoria": "modelo_id", "nivel": "degree"},
+                         "label_prefixes": ["Certificado "], "model_aliases": {"básico": "base"}}
+    meta["models"] = [
+        {"id": "base", "label": "Certificado Base", "page": 1, "group": "nivel", "degree": 0},
+        {"id": "avancado", "label": "Certificado Avançado", "page": 1, "group": "nivel", "degree": 1},
+    ]
+    config_path.write_text(json.dumps(config))
+    meta_path.write_text(json.dumps(meta))
+    with TestClient(create_app(tmp_path / "variant-data", profile=participation)) as app:
+        content = "nome;categoria;nivel\nAna;Base;1\nJoão;básico;0\nLuís;Base;9\n"
+        result = app.post("/api/lotes/importar", files={"file": ("variantes.csv", content.encode())},
+                          data={"defaults": json.dumps(payload("base"))})
+        assert result.status_code == 200
+        items = result.json()["items"]
+        assert items[0]["row"]["modelo_id"] == "avancado"
+        assert items[1]["row"]["modelo_id"] == "base"
+        assert "modelo_id" in items[2]["errors"]
+        assert result.json()["valid"] == 2

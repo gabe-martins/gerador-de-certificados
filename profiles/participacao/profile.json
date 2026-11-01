@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "participacao",
+  "name": "Gerador de Certificados",
+  "short_name": "CERTIFICADOS",
+  "tagline": "Reconhecendo cada conquista.",
+  "accent_color": "#245c8a",
+  "timezone": "America/Sao_Paulo",
+  "font_file": "LiberationSans-Bold.ttf",
+  "default_model": "participacao",
+  "labels": {
+    "recipient": "Nome do participante",
+    "template": "Certificado",
+    "date": "Data do evento",
+    "selection": "Tipo de certificado"
+  },
+  "imports": {
+    "aliases": {},
+    "label_prefixes": [],
+    "model_aliases": {}
+  }
+}

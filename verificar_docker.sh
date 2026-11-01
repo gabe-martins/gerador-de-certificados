@@ -4,8 +4,8 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 docker compose config --quiet
 docker compose ps certificados
 runner=(docker compose exec -T certificados)
-if [[ -n "${CERTIFICATES_TEST_CONTAINER:-${PAGELS_TEST_CONTAINER:-}}" ]]; then
-  runner=(docker exec -i "${CERTIFICATES_TEST_CONTAINER:-$PAGELS_TEST_CONTAINER}")
+if [[ -n "${CERTIFICATES_TEST_CONTAINER:-}" ]]; then
+  runner=(docker exec -i "$CERTIFICATES_TEST_CONTAINER")
 fi
 "${runner[@]}" python - <<'PY'
 import io, json, hashlib, os, sqlite3, urllib.request

@@ -11,20 +11,20 @@ bash implantar.sh
 bash verificar_docker.sh
 ```
 
-Na primeira execução, `implantar.sh` cria `.env` a partir de `.env.example`, ajusta UID/GID ao usuário atual e prepara o diretório de dados. O padrão publica em `127.0.0.1:8090`. Para acesso LAN, ajuste `CERTIFICATES_BIND_IP` para o IP do servidor antes de implantar. A instalação existente da Pagels usa `192.168.15.9:8090`.
+Na primeira execução, `implantar.sh` cria `.env` a partir de `.env.example`, ajusta UID/GID ao usuário atual e prepara o diretório de dados. O padrão publica em `127.0.0.1:8090`. Para acesso LAN, ajuste `CERTIFICATES_BIND_IP` para o IP do servidor antes de implantar.
 
 | Variável | Uso |
 | --- | --- |
-| `CERTIFICATES_INSTANCE` | Nome do projeto Compose; padrão `pagels-certificados` para preservar a instalação existente |
-| `CERTIFICATES_PROFILE` | Perfil dentro da imagem; padrão `pagels-jiu-jitsu` |
+| `CERTIFICATES_INSTANCE` | Nome do projeto Compose; padrão `gerador-certificados` |
+| `CERTIFICATES_PROFILE` | Perfil dentro da imagem; padrão `participacao` |
 | `CERTIFICATES_BIND_IP`, `CERTIFICATES_PORT` | Endereço e porta publicados |
-| `CERTIFICATES_DATA_PATH` | Diretório persistente do host; padrão `./data` |
+| `CERTIFICATES_DATA_PATH` | Diretório persistente do host; padrão `./data/participacao` |
 | `CERTIFICATES_UID`, `CERTIFICATES_GID` | Usuário do processo no contêiner |
 | `CERTIFICATES_IMAGE_TAG` | Tag da imagem local; versão atual `1.2.0` |
 
-## Atualizar a Pagels
+## Atualizar a edição generalista
 
-O script preserva o `.env` existente, o banco `data/pagels.sqlite3` e os PDFs. Variáveis antigas `PAGELS_BIND_IP`, `PAGELS_PORT`, `PAGELS_UID`, `PAGELS_GID` e `PAGELS_IMAGE_TAG` continuam aceitas como fallback. Variáveis `CERTIFICATES_*` têm precedência. O nome padrão do projeto Compose e o serviço `certificados` continuam os mesmos.
+O script preserva o `.env` existente e o diretório de dados configurado. Use somente variáveis `CERTIFICATES_*`. A aplicação especializada da Pagels e a compatibilidade com sua implantação antiga ficam na branch `pagels-jiu-jitsu`. Crie um arquivo de ambiente próprio para cada aplicação.
 
 Exporte um backup completo antes de atualizar. Atualize o código, reconstrua e verifique:
 

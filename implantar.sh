@@ -12,7 +12,7 @@ if [[ ! -f .env ]]; then
 fi
 # Compose resolves the configured data mount, including custom instance directories.
 data_path=$(docker compose config --environment | sed -n 's/^CERTIFICATES_DATA_PATH=//p')
-data_path=${data_path:-./data}
+data_path=${data_path:-./data/participacao}
 mkdir -p -- "$data_path"
 docker compose config --quiet
 # Build before replacing the running container. Existing files under data/ are preserved.
