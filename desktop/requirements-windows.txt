@@ -1,0 +1,5 @@
+-r ../requirements.lock
+# Windows does not ship the IANA database used by zoneinfo.
+tzdata==2026.6
+# pip --platform selects wheels but evaluates some markers on the build host.
+colorama==0.4.6

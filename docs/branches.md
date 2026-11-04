@@ -7,6 +7,7 @@ O repositório é `gabe-martins/gerador-de-certificados`.
 | `main` | Núcleo generalista com perfil neutro de participação | Versão estável |
 | `dev` | Núcleo generalista e desenvolvimento compartilhado | Novas funcionalidades e correções |
 | `pagels-jiu-jitsu` | Aplicação especializada da Pagels, perfil e artes de graduação | Instalação da academia |
+| `codex/pagels-windows-portable` | Edição desktop baseada em `pagels-jiu-jitsu` | Aplicativo portátil para Windows 10/11 x64 |
 
 ## Desenvolvimento e publicação
 
@@ -29,5 +30,15 @@ Para a academia:
 ```bash
 git clone --branch pagels-jiu-jitsu https://github.com/gabe-martins/gerador-de-certificados.git certificados-pagels
 ```
+
+Para compilar a edição desktop, use um checkout separado:
+
+```bash
+git clone --branch codex/pagels-windows-portable https://github.com/gabe-martins/gerador-de-certificados.git pagels-certificados-desktop
+```
+
+Consulte o [guia da edição Windows](windows-portable.md). Alterações exclusivas
+do aplicativo desktop ficam nessa branch; correções compartilhadas podem ser
+integradas separadamente, após revisão.
 
 Trocar de branch não isola os dados locais. Cada aplicação deve usar seu próprio diretório de dados, porta e nome de projeto Compose. Não inicie o gerador generalista sobre o diretório da instalação da academia. Não remova bancos ou PDFs ao atualizar o código.

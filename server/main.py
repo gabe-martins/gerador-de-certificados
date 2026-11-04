@@ -6,6 +6,7 @@ import sqlite3
 import tempfile
 import threading
 from datetime import datetime
+from contextlib import closing
 from pathlib import Path
 from uuid import UUID, uuid4
 from zipfile import ZipFile, ZIP_DEFLATED
@@ -255,9 +256,9 @@ def create_app(data_dir=None, profile=None):
     def backup():
         with lock, tempfile.TemporaryDirectory() as temp:
             snapshot = Path(temp) / database_name
-            with db() as source, sqlite3.connect(snapshot) as target:
+            with db() as source, closing(sqlite3.connect(snapshot)) as target:
                 source.backup(target)
-            with sqlite3.connect(snapshot) as conn:
+            with closing(sqlite3.connect(snapshot)) as conn:
                 ids = [r[0] for r in conn.execute("SELECT id FROM jobs")]
             output = io.BytesIO()
             manifest = {}

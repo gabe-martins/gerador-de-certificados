@@ -1,4 +1,15 @@
-# Gerador de Certificados
+# Pagels Certificados para Windows
+
+A edição **portátil 1.0.1** roda no Windows 10/11 de 64 bits, sem instalação
+e sem internet. Para usar o pacote pronto, extraia a pasta inteira e abra
+**Pagels Certificados.exe**. O aplicativo mantém os 23 modelos da academia,
+a emissão individual e em lote, o histórico e o backup.
+
+- [Manual de uso ilustrado (PDF)](docs/Manual-de-Uso-Pagels-Certificados.pdf)
+- [Guia para compilar, verificar e atualizar a versão Windows](docs/windows-portable.md)
+- [Histórico de versões do desktop](desktop/CHANGELOG.md)
+
+## Aplicação web
 
 Aplicação web para emitir certificados individuais e em lote a partir de modelos PDF. O núcleo é compartilhado; cada caso de uso tem um **perfil** com marca, textos, modelos e regras de importação. O primeiro perfil é **Pagels Jiu-Jitsu**, selecionado por padrão, com seus 23 modelos de graduação.
 
@@ -11,12 +22,14 @@ Repositório: [gabe-martins/gerador-de-certificados](https://github.com/gabe-mar
 - `main`: versão estável do gerador generalista, com modelo neutro de participação.
 - `dev`: desenvolvimento do gerador generalista; atualizada com a versão publicada em `main`.
 - `pagels-jiu-jitsu`: aplicação da academia, com seu perfil, 23 modelos e compatibilidade com a instalação existente.
+- `codex/pagels-windows-portable`: edição desktop portátil da Pagels para Windows.
 
 Este pacote mantém a configuração da Pagels. Para continuar a aplicação da academia, use a branch `pagels-jiu-jitsu`. Para o núcleo generalista, use `dev` ou `main`. O fluxo de atualização está em [docs/branches.md](docs/branches.md).
 
 ## Estrutura
 
 ```text
+desktop/                        janela Electron, backend local, build Windows e testes
 server/                         API, validação, PDF, importação e persistência
   asgi.py                       entrada do servidor
   main.py                       fábrica da aplicação e rotas

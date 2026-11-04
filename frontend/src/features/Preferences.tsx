@@ -5,6 +5,7 @@ import { useProfile } from "../lib/profile";
 import { api, json } from "../lib/api";
 import { localToday } from "../lib/forms";
 import { ErrorBox } from "../components/ui";
+import { desktop } from "../lib/desktop";
 
 import {
   Settings,
@@ -12,6 +13,8 @@ import {
   Download,
   LoaderCircle,
   Wifi,
+  HardDrive,
+  FolderOpen,
 } from "lucide-react";
 export function Preferences({
   defaults,
@@ -138,22 +141,27 @@ export function Preferences({
       )}
       <section className="card connection-card">
         <div className="card-title">
-          <Wifi size={21} />
-          <h2>Acesso na academia</h2>
+          {desktop ? <HardDrive size={21} /> : <Wifi size={21} />}
+          <h2>{desktop ? "Aplicativo portátil" : "Acesso na academia"}</h2>
         </div>
         <p className="muted">
-          Abra o endereço do servidor no navegador do celular ou computador
+          {desktop ? "Use sem internet. O histórico, os PDFs e suas preferências ficam na pasta do aplicativo. Para levar a outro computador, feche o aplicativo e copie a pasta inteira, incluindo a pasta data." : <>Abra o endereço do servidor no navegador do celular ou computador
           conectado à mesma rede. O computador que executa a aplicação precisa
-          estar ligado.
+          estar ligado.</>}
         </p>
         <div className="connection-facts">
           <span>
             <i className="online-dot" />
-            Rede local · sem login
+            {desktop ? "Neste computador · sem internet" : "Rede local · sem login"}
           </span>
-          <span>Dados compartilhados no servidor</span>
-          <span>Versão 1.1.2</span>
+          <span>{desktop ? "Dados salvos na pasta data" : "Dados compartilhados no servidor"}</span>
+          <span>{desktop ? `Versão portátil ${desktop.version}` : "Versão 1.2.0"}</span>
         </div>
+        {desktop && <button className="secondary" onClick={() => void desktop?.openDataFolder().then((message) => {
+          if (message) setError(message);
+        }).catch(() => setError("Não foi possível abrir a pasta de dados."))}>
+          <FolderOpen size={17} /> Abrir pasta de dados
+        </button>}
       </section>
     </div>
   );

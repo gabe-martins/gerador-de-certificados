@@ -37,6 +37,7 @@ import { Batch } from "./features/Batch";
 import { HistoryView } from "./features/HistoryView";
 import { Models } from "./features/Models";
 import { Preferences } from "./features/Preferences";
+import { desktop } from "./lib/desktop";
 const nav = [
   {
     id: "emitir",
@@ -253,7 +254,8 @@ export function App() {
           <div className="sidebar-bottom">
             <span className="online-dot" />
             <div>
-              Rede local<span>Histórico compartilhado</span>
+              {desktop ? "Aplicativo local" : "Rede local"}
+              <span>{desktop ? "Seus certificados neste computador" : "Histórico compartilhado"}</span>
             </div>
           </div>
         </aside>
@@ -265,7 +267,7 @@ export function App() {
             </span>
             <span className="network">
               <Wifi size={15} />
-              Rede local
+              {desktop ? "Uso offline" : "Rede local"}
             </span>
             <BrandLogo className="mobile-logo" />
           </header>

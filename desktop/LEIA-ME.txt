@@ -1,0 +1,57 @@
+PAGELS JIU-JITSU · CERTIFICADOS
+Aplicativo portátil 1.0.1 · Windows 10/11, 64 bits
+
+COMO ABRIR
+1. Extraia TODO o ZIP para uma pasta em Documentos ou em outro local gravável.
+2. Abra "Pagels Certificados.exe" dentro da pasta extraída.
+3. Preencha os dados do aluno, confira a prévia e clique em Emitir certificado.
+
+Não precisa instalar Python, Node, navegador, Docker ou WebView2.
+Não precisa de internet durante o uso nem de uma conta de administrador.
+Não execute diretamente de dentro do ZIP e não separe o EXE dos demais arquivos.
+O executável não tem assinatura digital comercial. A política do Windows da
+sua organização pode exigir autorização do administrador para executá-lo.
+
+RECURSOS
+- Marca, cores, logotipo e interface da aplicação Pagels Jiu-Jitsu.
+- 23 modelos originais de graduação.
+- Emissão individual e em lote, com importação CSV/XLSX.
+- Prévia PDF, histórico, filtros, reutilização de dados e controle de duplicados.
+- PDF completo, PDFs individuais em ZIP e abertura do PDF para impressão.
+- Preferências e backup completo no menu Configurações ou Arquivo.
+
+SEUS DADOS
+Os certificados e o histórico ficam em data, ao lado do executável.
+Os arquivos exportados podem ser salvos na pasta escolhida ao baixar.
+Os logs e o cache da janela ficam em data/logs e data/runtime.
+Esta edição usa somente este computador; não compartilha o histórico pela rede.
+Nenhum histórico real está incluído no pacote distribuído.
+
+COPIAR PARA OUTRO COMPUTADOR
+Feche o aplicativo, aguarde seu encerramento e copie a pasta inteira, incluindo
+data. Se estiver em um pendrive, feche o aplicativo antes de removê-lo.
+Evite executar a mesma pasta simultaneamente por compartilhamento de rede.
+
+BACKUP E RESTAURAÇÃO
+Faça backups em Configurações > Baixar backup completo e guarde em outro local.
+Para restaurar dados de um backup desta edição: feche o aplicativo, guarde a
+pasta data atual e copie o conteúdo de data/ do ZIP de backup para data/ ao lado
+do executável. Não use ZIPs de origem desconhecida. Preserve as artes do pacote;
+restaurar modelos de outra versão exige conferir o perfil e a compatibilidade.
+O backup é complementar à cópia da pasta inteira com o aplicativo fechado.
+
+ATUALIZAR
+Faça backup. Feche o aplicativo. Extraia a nova versão em outra pasta e copie
+a pasta data da versão anterior. Mantenha a pasta anterior até conferir o
+histórico e a abertura dos PDFs na nova versão.
+
+IMPRIMIR
+Use Imprimir após emitir ou no histórico. O PDF abre em outra janela.
+Use a impressora do visualizador PDF, escolha A4 paisagem e escala 100%.
+Confira as configurações do seu modelo de impressora antes da impressão final.
+
+SE NÃO ABRIR
+Confira se extraiu o ZIP inteiro e se a pasta permite salvar arquivos.
+Consulte data/logs/backend.log. Preserve data antes de extrair novamente.
+O aplicativo precisa de Windows 10/11 x64; Windows 7, 32 bits e ARM não foram
+incluídos nesta distribuição.
